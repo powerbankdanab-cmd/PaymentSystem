@@ -1,0 +1,26 @@
+export type PaymentMethod = "EVC Plus" | "ZAAD" | "SAHAL";
+
+export type PaymentStatus = "processing" | "success" | "failed";
+
+export type PaymentResult = {
+  open: boolean;
+  status: PaymentStatus;
+  statusMessage: string;
+  errorMessage: string;
+  waafiMessage: string;
+  batteryInfo: {
+    batteryId: string;
+    slotId: string;
+  } | null;
+};
+
+export type PaymentErrors = {
+  phone?: string;
+  agreeRules?: string;
+};
+
+export type TimeOption = {
+  label: string;
+  amount: number;
+  icon: "clock" | "timer";
+};
