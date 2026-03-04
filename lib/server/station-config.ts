@@ -5,11 +5,11 @@ export type StationConfig = {
 };
 
 const STATION_NAMES: Record<string, string> = {
-  "58": "Cafe Castello Taleex",
-  "59": "Cafe Castello Boondhere",
-  "60": "Cafe Java Taleex",
-  "61": "Cafe Java Airport",
-  "62": "Cafe Dilek Somalia",
+  "58": "Danab-Cafe Castello\nTaleex",
+  "59": "Danab-Feynuus\nBowling",
+  "60": "Danab-Java\nTaleex",
+  "61": "Danab-Delik\nSomalia",
+  "62": "Danab-Beydhan\nCoffe",
 };
 
 export const STATION_CONFIGS: Record<string, StationConfig> = {

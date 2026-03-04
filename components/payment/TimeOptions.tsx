@@ -15,12 +15,19 @@ export function TimeOptions({
   onSelect: (amount: number) => void;
 }) {
   const stationName = getStationName();
+  const nameLines = stationName.split("\n");
 
   return (
     <>
       <div className="rounded-b-2xl bg-gradient-to-r from-pink-500 to-indigo-500 px-4 py-5 text-center text-white shadow-lg">
         <h1 className="text-xl font-black leading-tight">
-          Danab - {stationName}
+          {nameLines[0]}
+          {nameLines[1] && (
+            <>
+              <br />
+              {nameLines[1]}
+            </>
+          )}
         </h1>
         <p className="mt-1 text-sm text-white/90">Dooro Muddada kugu habboon</p>
       </div>

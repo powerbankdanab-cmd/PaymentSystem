@@ -1,9 +1,9 @@
 const STATION_NAMES: Record<string, string> = {
-  "58": "Cafe Castello Taleex",
-  "59": "Cafe Castello Boondhere",
-  "60": "Cafe Java Taleex",
-  "61": "Cafe Java Airport",
-  "62": "Cafe Dilek Somalia",
+  "58": "Danab-Cafe Castello\nTaleex",
+  "59": "Danab-Feynuus\nBowling",
+  "60": "Danab-Java\nTaleex",
+  "61": "Danab-Delik\nSomalia",
+  "62": "Danab-Beydhan\nCoffe",
 };
 
 export function getStationName(): string {
@@ -12,14 +12,14 @@ export function getStationName(): string {
   }
 
   const hostname = window.location.hostname;
-  
+
   // Extract station number from subdomain (e.g., station58.danab.site -> 58)
   const subdomain = hostname.split(".")[0];
   const stationNumber = subdomain.replace(/\D/g, "");
-  
+
   if (stationNumber && STATION_NAMES[stationNumber]) {
     return STATION_NAMES[stationNumber];
   }
-  
+
   return "Danab Power Bank";
 }
