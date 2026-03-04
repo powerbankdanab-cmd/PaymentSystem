@@ -19,7 +19,7 @@ export function TimeOptions({
 
   return (
     <>
-      <div className="rounded-b-2xl bg-gradient-to-r from-pink-500 to-indigo-500 px-4 py-5 text-center text-white shadow-lg">
+      <div className="rounded-2xl bg-gradient-to-r from-pink-500 to-indigo-500 px-6 py-6 text-center text-white shadow-lg">
         <h1 className="text-xl font-black leading-tight">
           {nameLines[0]}
           {nameLines[1] && (
@@ -29,10 +29,12 @@ export function TimeOptions({
             </>
           )}
         </h1>
-        <p className="mt-1 text-sm text-white/90">Dooro Muddada kugu habboon</p>
+        <p className="mt-2 text-sm font-medium text-white/90">
+          Dooro Muddada kugu habboon
+        </p>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 px-3">
+      <div className="mt-5 grid grid-cols-2 gap-4 px-4">
         {options.map((time) => {
           const isSelected = selectedAmount === time.amount;
 
@@ -41,10 +43,10 @@ export function TimeOptions({
               key={time.label}
               onClick={() => onSelect(time.amount)}
               className={cn(
-                "relative rounded-xl p-4 text-center shadow-sm transition hover:scale-[1.02]",
+                "relative rounded-2xl p-5 text-center shadow-md transition-all hover:scale-[1.02]",
                 isSelected
                   ? "border-2 border-pink-500 bg-white dark:bg-slate-700"
-                  : "border border-transparent bg-slate-100/80 dark:bg-slate-700/70",
+                  : "border-2 border-slate-200/50 bg-white/80 dark:border-slate-600/50 dark:bg-slate-700/70",
               )}
             >
               {time.icon === "clock" ? <ClockIcon /> : <TimerIcon />}

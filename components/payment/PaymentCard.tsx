@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AmountCard } from "@/components/payment/AmountCard";
-import { PAYMENT_METHODS, PHONE_PLACEHOLDER_BY_METHOD, TIME_OPTIONS } from "@/components/payment/constants";
-import { cn, normalizePhone, validatePaymentInput } from "@/components/payment/helpers";
+import {
+  PAYMENT_METHODS,
+  PHONE_PLACEHOLDER_BY_METHOD,
+  TIME_OPTIONS,
+} from "@/components/payment/constants";
+import {
+  cn,
+  normalizePhone,
+  validatePaymentInput,
+} from "@/components/payment/helpers";
 import { MethodPicker } from "@/components/payment/MethodPicker";
 import { PayButton } from "@/components/payment/PayButton";
 import { PaymentHeader } from "@/components/payment/PaymentHeader";
@@ -28,11 +36,14 @@ export function PaymentCard({
   const router = useRouter();
 
   const [selectedAmount, setSelectedAmount] = useState(DEFAULT_AMOUNT);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(DEFAULT_METHOD);
+  const [selectedMethod, setSelectedMethod] =
+    useState<PaymentMethod>(DEFAULT_METHOD);
   const [phone, setPhone] = useState("");
   const [agreeRules, setAgreeRules] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ phone?: string; agreeRules?: string }>({});
+  const [errors, setErrors] = useState<{ phone?: string; agreeRules?: string }>(
+    {},
+  );
 
   useEffect(() => {
     router.prefetch("/payment");
@@ -104,14 +115,20 @@ export function PaymentCard({
   return (
     <main
       className={cn(
-        "relative mx-auto w-full max-w-md rounded-[28px] border p-5 shadow-[0_25px_70px_rgba(94,46,140,.25)] backdrop-blur-md",
-        darkMode ? "border-white/10 bg-[#181828]/90 text-white" : "border-white/60 bg-white/90 text-slate-800",
+        "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-[0_20px_60px_rgba(94,46,140,.2)] backdrop-blur-md",
+        darkMode
+          ? "border-white/10 bg-[#181828]/90 text-white"
+          : "border-white/60 bg-white/95 text-slate-800",
       )}
     >
       <PaymentHeader darkMode={darkMode} onToggleTheme={onToggleTheme} />
 
-      <section className="rounded-2xl bg-white/60 pb-5 dark:bg-slate-900/20">
-        <TimeOptions options={TIME_OPTIONS} selectedAmount={selectedAmount} onSelect={setSelectedAmount} />
+      <section className="rounded-3xl bg-white/70 pb-6 dark:bg-slate-900/20">
+        <TimeOptions
+          options={TIME_OPTIONS}
+          selectedAmount={selectedAmount}
+          onSelect={setSelectedAmount}
+        />
 
         <AmountCard amount={selectedAmount} />
 
@@ -139,7 +156,9 @@ export function PaymentCard({
 
       <footer className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
         Call us any feedback or problem{" "}
-        <span className="font-semibold text-slate-900 dark:text-white">616586503 / 616251068</span>
+        <span className="font-semibold text-slate-900 dark:text-white">
+          616586503 / 616251068
+        </span>
       </footer>
     </main>
   );
