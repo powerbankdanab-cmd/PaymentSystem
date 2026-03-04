@@ -15,18 +15,16 @@ export function PhoneInput({
 }) {
   return (
     <div className="mx-3 mt-5 sm:mx-4">
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+      <label className="mb-2 block text-sm font-semibold text-gray-700">
         Telefoon Numberka
       </label>
       <div
         className={cn(
-          "flex overflow-hidden rounded-xl shadow-lg transition-all focus-within:ring-2 focus-within:ring-pink-400 focus-within:shadow-pink-500/20",
-          error
-            ? "border-2 border-red-500 bg-red-50 dark:bg-red-900/20"
-            : "bg-slate-100 dark:bg-slate-700",
+          "flex overflow-hidden rounded-xl border shadow-sm transition-all focus-within:ring-2 focus-within:ring-pink-300",
+          error ? "border-red-500 bg-red-50" : "border-gray-200 bg-white",
         )}
       >
-        <span className="flex items-center gap-2 bg-slate-700 px-4 py-3 text-sm font-semibold text-white">
+        <span className="flex items-center gap-2 bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-700">
           <span aria-hidden="true">🇸🇴</span>
           +252
         </span>
@@ -35,16 +33,14 @@ export function PhoneInput({
           inputMode="numeric"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full bg-transparent px-3 py-3 text-sm font-medium outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-slate-500"
+          className="w-full bg-transparent px-3 py-3 text-sm font-medium text-gray-700 outline-none placeholder:text-gray-400"
           placeholder={placeholder}
         />
       </div>
       {error && (
-        <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
-          {error}
-        </p>
+        <p className="mt-2 text-xs font-medium text-red-600">{error}</p>
       )}
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-2 text-xs text-gray-500">
         Fadlan Gali Numberka lacagta la Dirayo
       </p>
     </div>

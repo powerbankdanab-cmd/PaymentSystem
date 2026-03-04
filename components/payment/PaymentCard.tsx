@@ -115,10 +115,10 @@ export function PaymentCard({
   return (
     <main
       className={cn(
-        "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-2xl backdrop-blur-sm sm:p-5",
+        "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-lg sm:p-5",
         darkMode
           ? "border-white/10 bg-slate-900/95 text-white"
-          : "border-gray-200/50 bg-white/95 text-slate-800",
+          : "border-gray-200 bg-white text-slate-800",
       )}
     >
       <PaymentHeader darkMode={darkMode} onToggleTheme={onToggleTheme} />
@@ -154,11 +154,9 @@ export function PaymentCard({
         <PayButton loading={isSubmitting} onClick={handlePay} />
       </section>
 
-      <footer className="mt-6 rounded-xl bg-slate-50 px-4 py-3 text-center text-xs text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 sm:text-sm">
+      <footer className="mt-6 px-4 py-3 text-center text-xs text-gray-600 sm:text-sm">
         Call us any feedback or problem{" "}
-        <span className="block font-bold text-slate-900 dark:text-white sm:inline">
-          616586503 / 616251068
-        </span>
+        <span className="font-bold text-gray-900">616586503 / 616251068</span>
       </footer>
     </main>
   );

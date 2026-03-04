@@ -14,7 +14,7 @@ export function PayButton({
       <button
         onClick={onClick}
         disabled={loading}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-indigo-600 px-4 py-4 text-lg font-bold text-white shadow-xl shadow-pink-500/30 transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-pink-500/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:py-4"
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-4 text-lg font-bold text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:py-4"
       >
         {loading ? "Processing..." : "Bixi Hadda"}
         <ArrowRightIcon className="h-5 w-5" />
