@@ -115,15 +115,15 @@ export function PaymentCard({
   return (
     <main
       className={cn(
-        "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-[0_20px_60px_rgba(94,46,140,.2)] backdrop-blur-md",
+        "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-[0_10px_40px_rgba(0,0,0,.08)]",
         darkMode
           ? "border-white/10 bg-[#181828]/90 text-white"
-          : "border-white/60 bg-white/95 text-slate-800",
+          : "border-gray-200/50 bg-white text-slate-800",
       )}
     >
       <PaymentHeader darkMode={darkMode} onToggleTheme={onToggleTheme} />
 
-      <section className="rounded-3xl bg-white/70 pb-6 dark:bg-slate-900/20">
+      <section className="rounded-3xl bg-white pb-6 dark:bg-slate-900/20">
         <TimeOptions
           options={TIME_OPTIONS}
           selectedAmount={selectedAmount}

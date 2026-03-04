@@ -43,10 +43,10 @@ export function TimeOptions({
               key={time.label}
               onClick={() => onSelect(time.amount)}
               className={cn(
-                "relative rounded-2xl p-5 text-center shadow-md transition-all hover:scale-[1.02]",
+                "relative rounded-2xl p-5 text-center shadow-sm transition-all hover:scale-[1.02]",
                 isSelected
                   ? "border-2 border-pink-500 bg-white dark:bg-slate-700"
-                  : "border-2 border-slate-200/50 bg-white/80 dark:border-slate-600/50 dark:bg-slate-700/70",
+                  : "border-2 border-gray-200 bg-white dark:border-slate-600/50 dark:bg-slate-700/70",
               )}
             >
               {time.icon === "clock" ? <ClockIcon /> : <TimerIcon />}
