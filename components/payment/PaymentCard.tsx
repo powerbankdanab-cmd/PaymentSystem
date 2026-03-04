@@ -7,7 +7,6 @@ import { AmountCard } from "@/components/payment/AmountCard";
 import {
   PAYMENT_METHODS,
   PHONE_PLACEHOLDER_BY_METHOD,
-  TIME_OPTIONS,
 } from "@/components/payment/constants";
 import {
   cn,
@@ -19,11 +18,10 @@ import { PayButton } from "@/components/payment/PayButton";
 import { PaymentHeader } from "@/components/payment/PaymentHeader";
 import { PhoneInput } from "@/components/payment/PhoneInput";
 import { RulesAgreement } from "@/components/payment/RulesAgreement";
-import { TimeOptions } from "@/components/payment/TimeOptions";
 import { PaymentMethod } from "@/components/payment/types";
 
 const PAYMENT_FLOW_RESET_KEY = "caste:payment-flow-reset-home-form";
-const DEFAULT_AMOUNT = 0.5;
+const DEFAULT_AMOUNT = 0.75;
 const DEFAULT_METHOD: PaymentMethod = "EVC Plus";
 
 export function PaymentCard({
@@ -124,12 +122,6 @@ export function PaymentCard({
       <PaymentHeader darkMode={darkMode} onToggleTheme={onToggleTheme} />
 
       <section className="rounded-3xl pb-6">
-        <TimeOptions
-          options={TIME_OPTIONS}
-          selectedAmount={selectedAmount}
-          onSelect={setSelectedAmount}
-        />
-
         <AmountCard amount={selectedAmount} />
 
         <MethodPicker
