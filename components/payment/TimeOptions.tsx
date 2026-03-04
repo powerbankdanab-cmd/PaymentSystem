@@ -34,7 +34,7 @@ export function TimeOptions({
         </p>
       </div>
 
-      <div className="mx-auto mt-4 grid max-w-[160px] grid-cols-1 gap-3 px-3 sm:mt-5 sm:max-w-[180px] sm:gap-4 sm:px-4">
+      <div className="mx-auto mt-4 grid max-w-[130px] grid-cols-1 gap-3 px-3 sm:mt-5 sm:max-w-[140px] sm:gap-4 sm:px-4">
         {options.map((time) => {
           const isSelected = selectedAmount === time.amount;
 
@@ -43,7 +43,7 @@ export function TimeOptions({
               key={time.label}
               onClick={() => onSelect(time.amount)}
               className={cn(
-                "group relative overflow-hidden rounded-2xl p-5 text-center shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] sm:p-6",
+                "group relative overflow-hidden rounded-2xl p-3 text-center shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] sm:p-4",
                 isSelected
                   ? "border-2 border-pink-500 bg-white"
                   : "border-2 border-gray-200 bg-gray-50 hover:border-pink-300",
@@ -51,9 +51,9 @@ export function TimeOptions({
             >
               <div className="relative z-10">
                 {time.icon === "clock" ? (
-                  <ClockIcon className="mx-auto mb-2 h-12 w-12 text-pink-500" />
+                  <ClockIcon className="mx-auto mb-1 h-8 w-8 text-pink-500" />
                 ) : (
-                  <TimerIcon className="mx-auto mb-2 h-12 w-12 text-pink-500" />
+                  <TimerIcon className="mx-auto mb-1 h-8 w-8 text-pink-500" />
                 )}
 
                 <p
