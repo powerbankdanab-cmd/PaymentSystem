@@ -10,6 +10,8 @@ import { Pricing } from "@/components/landing/Pricing";
 import { Stations } from "@/components/landing/Stations";
 import { PaymentScreen } from "@/components/payment/PaymentScreen";
 
+export const dynamic = "force-dynamic";
+
 function isStationSubdomain(host: string): boolean {
   const subdomain = host.split(".")[0];
   return /^station\d+$/i.test(subdomain);
