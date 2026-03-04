@@ -55,10 +55,10 @@ export function SunIcon({ className }: { className?: string }) {
   );
 }
 
-export function ClockIcon() {
+export function ClockIcon({ className }: { className?: string }) {
   return (
     <svg
-      className="mx-auto mb-2 h-11 w-11 text-pink-500"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
@@ -71,10 +71,10 @@ export function ClockIcon() {
   );
 }
 
-export function TimerIcon() {
+export function TimerIcon({ className }: { className?: string }) {
   return (
     <svg
-      className="mx-auto mb-2 h-11 w-11 text-pink-500"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
@@ -115,7 +115,11 @@ export function CloseIcon({ className }: { className?: string }) {
       strokeWidth={2.5}
       aria-hidden="true"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m15 9-6 6m0-6 6 6" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m15 9-6 6m0-6 6 6"
+      />
     </svg>
   );
 }
@@ -130,7 +134,11 @@ export function ArrowRightIcon({ className }: { className?: string }) {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 14 .01M13 6l6 6-6 6" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m5 12 14 .01M13 6l6 6-6 6"
+      />
     </svg>
   );
 }

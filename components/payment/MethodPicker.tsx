@@ -13,11 +13,11 @@ export function MethodPicker({
   onSelect: (method: PaymentMethod) => void;
 }) {
   return (
-    <div className="mx-3 mt-6">
-      <p className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+    <div className="mx-3 mt-6 sm:mx-4">
+      <p className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
         Habka Lacag Bixinta
       </p>
-      <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+      <div className="grid grid-cols-3 gap-2.5 text-xs font-bold sm:gap-3">
         {methods.map((method) => {
           const isActive = selectedMethod === method;
           return (
@@ -25,10 +25,10 @@ export function MethodPicker({
               key={method}
               onClick={() => onSelect(method)}
               className={cn(
-                "rounded-full border px-3 py-2 shadow-sm transition",
+                "rounded-full px-3 py-2.5 shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] sm:px-4 sm:py-3",
                 isActive
-                  ? "border-pink-400 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-700 dark:text-pink-100"
-                  : "border-transparent bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200",
+                  ? "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-pink-500/30"
+                  : "bg-slate-700 text-slate-200 shadow-slate-900/20 hover:bg-slate-600",
               )}
             >
               {method}

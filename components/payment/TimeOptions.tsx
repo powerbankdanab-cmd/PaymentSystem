@@ -43,33 +43,46 @@ export function TimeOptions({
               key={time.label}
               onClick={() => onSelect(time.amount)}
               className={cn(
-                "relative rounded-2xl p-4 text-center shadow-sm transition-all hover:scale-[1.02] sm:p-5",
+                "group relative overflow-hidden rounded-2xl p-4 text-center shadow-lg transition-all hover:scale-[1.03] active:scale-[0.98] sm:p-5",
                 isSelected
-                  ? "border-2 border-pink-500 bg-white"
-                  : "border-2 border-gray-200 bg-white",
+                  ? "bg-gradient-to-br from-pink-500 to-purple-600 shadow-pink-500/30"
+                  : "bg-gradient-to-br from-slate-700 to-slate-800 shadow-slate-900/20 hover:from-slate-600 hover:to-slate-700",
               )}
             >
-              {time.icon === "clock" ? <ClockIcon /> : <TimerIcon />}
+              <div className="relative z-10">
+                <div
+                  className={cn(
+                    "mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                    isSelected ? "bg-white/20" : "bg-white/10",
+                  )}
+                >
+                  {time.icon === "clock" ? (
+                    <ClockIcon
+                      className={cn(
+                        "h-6 w-6",
+                        isSelected ? "text-white" : "text-pink-400",
+                      )}
+                    />
+                  ) : (
+                    <TimerIcon
+                      className={cn(
+                        "h-6 w-6",
+                        isSelected ? "text-white" : "text-pink-400",
+                      )}
+                    />
+                  )}
+                </div>
 
-              <p
-                className={cn(
-                  "text-sm font-bold",
-                  isSelected ? "text-pink-500" : "text-slate-700",
-                )}
-              >
-                {time.label}
-              </p>
-              <p
-                className={cn(
-                  "text-xs",
-                  isSelected ? "text-pink-400" : "text-slate-500",
-                )}
-              >
-                {formatAmount(time.amount)}
-              </p>
+                <p className="text-base font-bold text-white sm:text-lg">
+                  {time.label}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-white/90">
+                  {formatAmount(time.amount)}
+                </p>
+              </div>
 
               {isSelected && (
-                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-pink-500 text-pink-500">
+                <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-white text-pink-600 shadow-md">
                   ✓
                 </span>
               )}
