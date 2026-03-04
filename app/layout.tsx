@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Danab | Castello Taleex",
-  description: "WiFi and battery rental payment interface for Castello Taleex.",
+  title: "Danab | Portable Power Bank Rentals in Somalia",
+  description:
+    "Somalia's first portable power bank rental service. Rent a power bank at your favorite cafe, pay with EVC Plus, ZAAD, or SAHAL, and stay charged on the go.",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
