@@ -34,7 +34,7 @@ export function TimeOptions({
         </p>
       </div>
 
-      <div className="mx-auto mt-4 grid max-w-[100px] grid-cols-1 gap-3 px-3 sm:mt-5 sm:max-w-[110px] sm:gap-4 sm:px-4">
+      <div className="mx-auto mt-4 grid w-[200px] grid-cols-1 gap-3 sm:mt-5 sm:w-[210px] sm:gap-4">
         {options.map((time) => {
           const isSelected = selectedAmount === time.amount;
 
@@ -43,36 +43,25 @@ export function TimeOptions({
               key={time.label}
               onClick={() => onSelect(time.amount)}
               className={cn(
-                "group relative overflow-hidden rounded-xl p-2 text-center shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] sm:p-2.5",
+                "group relative flex h-[50px] items-center justify-center gap-2 overflow-hidden rounded-xl shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] sm:h-[60px]",
                 isSelected
                   ? "border-2 border-pink-500 bg-white"
                   : "border-2 border-gray-200 bg-gray-50 hover:border-pink-300",
               )}
             >
-              <div className="relative z-10">
-                {time.icon === "clock" ? (
-                  <ClockIcon className="mx-auto mb-1 h-6 w-6 text-pink-500" />
-                ) : (
-                  <TimerIcon className="mx-auto mb-1 h-6 w-6 text-pink-500" />
+              {time.icon === "clock" ? (
+                <ClockIcon className="h-5 w-5 shrink-0 text-pink-500 sm:h-6 sm:w-6" />
+              ) : (
+                <TimerIcon className="h-5 w-5 shrink-0 text-pink-500 sm:h-6 sm:w-6" />
+              )}
+              <span
+                className={cn(
+                  "text-sm font-bold sm:text-base",
+                  isSelected ? "text-pink-500" : "text-gray-700",
                 )}
-
-                <p
-                  className={cn(
-                    "text-xs font-bold sm:text-sm",
-                    isSelected ? "text-pink-500" : "text-gray-700",
-                  )}
-                >
-                  {time.label}
-                </p>
-                <p
-                  className={cn(
-                    "mt-0.5 text-xs font-medium",
-                    isSelected ? "text-pink-400" : "text-gray-500",
-                  )}
-                >
-                  {formatAmount(time.amount)}
-                </p>
-              </div>
+              >
+                {formatAmount(time.amount)}
+              </span>
 
               {isSelected && (
                 <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full border border-pink-500 bg-white text-[8px] text-pink-500">
