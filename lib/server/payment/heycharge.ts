@@ -8,7 +8,7 @@ type HeyChargeStationResponse = {
 };
 
 const HEYCHARGE_QUERY_TIMEOUT_MS = 12_000;
-const HEYCHARGE_UNLOCK_TIMEOUT_MS = 12_000;
+const HEYCHARGE_UNLOCK_TIMEOUT_MS = 15_000;
 
 function buildHeyChargeAuthHeader() {
   const apiKey = getRequiredEnv("HEYCHARGE_API_KEY");
@@ -42,16 +42,25 @@ export async function getAvailableBattery(imei: string) {
     clearTimeout(timeout);
   }
 
-  const payload = (await parseResponseBody(response)) as HeyChargeStationResponse | string | null;
+  const payload = (await parseResponseBody(response)) as
+    | HeyChargeStationResponse
+    | string
+    | null;
 
   if (!response.ok) {
-    throw new Error(toErrorMessage(payload, "Failed to query station batteries"));
+    throw new Error(
+      toErrorMessage(payload, "Failed to query station batteries"),
+    );
   }
 
   const payloadObject =
-    payload && typeof payload === "object" ? (payload as HeyChargeStationResponse) : null;
+    payload && typeof payload === "object"
+      ? (payload as HeyChargeStationResponse)
+      : null;
 
-  const batteries = Array.isArray(payloadObject?.batteries) ? payloadObject.batteries : [];
+  const batteries = Array.isArray(payloadObject?.batteries)
+    ? payloadObject.batteries
+    : [];
 
   const available = batteries
     .filter(
@@ -63,7 +72,8 @@ export async function getAvailableBattery(imei: string) {
     )
     .sort(
       (a, b) =>
-        Number.parseInt(b.battery_capacity, 10) - Number.parseInt(a.battery_capacity, 10),
+        Number.parseInt(b.battery_capacity, 10) -
+        Number.parseInt(a.battery_capacity, 10),
     );
 
   return available[0] || null;

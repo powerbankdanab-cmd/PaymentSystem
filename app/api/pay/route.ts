@@ -10,7 +10,8 @@ type PaymentRequestBody = {
 };
 
 function parseAndValidateBody(body: PaymentRequestBody) {
-  const phoneNumber = typeof body.phoneNumber === "string" ? body.phoneNumber.trim() : "";
+  const phoneNumber =
+    typeof body.phoneNumber === "string" ? body.phoneNumber.trim() : "";
   const amount = Number(body.amount);
 
   if (!phoneNumber || Number.isNaN(amount) || amount <= 0) {
@@ -19,6 +20,8 @@ function parseAndValidateBody(body: PaymentRequestBody) {
 
   return { phoneNumber, amount } as const;
 }
+
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
@@ -57,13 +60,17 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (isHttpError(error)) {
       const payload = error.details
-        ? { error: error.message, ...(error.details as Record<string, unknown>) }
+        ? {
+            error: error.message,
+            ...(error.details as Record<string, unknown>),
+          }
         : { error: error.message };
 
       return NextResponse.json(payload, { status: error.status });
     }
 
-    const message = error instanceof Error ? error.message : "Internal server error";
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

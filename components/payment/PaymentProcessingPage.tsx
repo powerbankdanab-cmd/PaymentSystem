@@ -6,8 +6,16 @@ import { useSearchParams } from "next/navigation";
 
 import { PAYMENT_METHODS } from "@/components/payment/constants";
 import { CheckIcon, CloseIcon } from "@/components/payment/Icons";
-import { cn, mapBackendErrorMessage, normalizePhone } from "@/components/payment/helpers";
-import { PaymentMethod, PaymentStatus, ProcessingStep } from "@/components/payment/types";
+import {
+  cn,
+  mapBackendErrorMessage,
+  normalizePhone,
+} from "@/components/payment/helpers";
+import {
+  PaymentMethod,
+  PaymentStatus,
+  ProcessingStep,
+} from "@/components/payment/types";
 
 type ApiResponse = {
   success?: boolean;
@@ -63,7 +71,10 @@ export function PaymentProcessingPage() {
   const unlockStepTimerRef = useRef<number | null>(null);
   const paymentRequestAbortRef = useRef<AbortController | null>(null);
 
-  const method = useMemo(() => parseMethod(searchParams.get("method")), [searchParams]);
+  const method = useMemo(
+    () => parseMethod(searchParams.get("method")),
+    [searchParams],
+  );
 
   const amount = useMemo(() => {
     const raw = Number(searchParams.get("amount"));
@@ -74,15 +85,24 @@ export function PaymentProcessingPage() {
     return raw;
   }, [searchParams]);
 
-  const phoneNumber = useMemo(() => normalizePhone(searchParams.get("phone") || ""), [searchParams]);
+  const phoneNumber = useMemo(
+    () => normalizePhone(searchParams.get("phone") || ""),
+    [searchParams],
+  );
 
   const [status, setStatus] = useState<PaymentStatus>("processing");
-  const [processingStep, setProcessingStep] = useState<ProcessingStep>("verify");
-  const [statusMessage, setStatusMessage] = useState("Hubinaya macluumaadka...");
+  const [processingStep, setProcessingStep] =
+    useState<ProcessingStep>("verify");
+  const [statusMessage, setStatusMessage] = useState(
+    "Hubinaya macluumaadka...",
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const [waafiMessage, setWaafiMessage] = useState("");
-  const [batteryInfo, setBatteryInfo] = useState<{ batteryId: string; slotId: string } | null>(null);
-  const PAYMENT_REQUEST_TIMEOUT_MS = 20_000;
+  const [batteryInfo, setBatteryInfo] = useState<{
+    batteryId: string;
+    slotId: string;
+  } | null>(null);
+  const PAYMENT_REQUEST_TIMEOUT_MS = 45_000;
 
   const clearUnlockStepTimer = () => {
     if (unlockStepTimerRef.current !== null) {
@@ -101,7 +121,9 @@ export function PaymentProcessingPage() {
   useEffect(() => {
     if (!phoneNumber || phoneNumber.length < 7) {
       setStatus("failed");
-      setErrorMessage("Number-ka waa khaldan yahay. Fadlan ku noqo bogga hore oo mar kale isku day.");
+      setErrorMessage(
+        "Number-ka waa khaldan yahay. Fadlan ku noqo bogga hore oo mar kale isku day.",
+      );
       return;
     }
 
@@ -162,7 +184,9 @@ export function PaymentProcessingPage() {
         if (paymentRes.ok && paymentData.success) {
           setProcessingStep("unlock");
           setStatus("success");
-          setWaafiMessage(paymentData.waafiMessage || "Lacag bixinta waa guulaysatay!");
+          setWaafiMessage(
+            paymentData.waafiMessage || "Lacag bixinta waa guulaysatay!",
+          );
           setBatteryInfo(
             paymentData.battery_id && paymentData.slot_id
               ? {
@@ -175,7 +199,11 @@ export function PaymentProcessingPage() {
         }
 
         setStatus("failed");
-        setErrorMessage(mapBackendErrorMessage(paymentData.error || "Khalad dhacay, fadlan mar kale isku day"));
+        setErrorMessage(
+          mapBackendErrorMessage(
+            paymentData.error || "Khalad dhacay, fadlan mar kale isku day",
+          ),
+        );
       } catch (error) {
         if (cancelled) {
           return;
@@ -191,7 +219,10 @@ export function PaymentProcessingPage() {
           return;
         }
 
-        const message = error instanceof Error ? error.message : "Network error, fadlan mar kale isku day.";
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Network error, fadlan mar kale isku day.";
         setStatus("failed");
         setErrorMessage(message);
       } finally {
@@ -209,7 +240,9 @@ export function PaymentProcessingPage() {
     };
   }, [amount, method, phoneNumber]);
 
-  const activeStepIndex = PROCESSING_STEPS.findIndex((step) => step.key === processingStep);
+  const activeStepIndex = PROCESSING_STEPS.findIndex(
+    (step) => step.key === processingStep,
+  );
 
   return (
     <div
@@ -227,12 +260,17 @@ export function PaymentProcessingPage() {
         {status === "processing" && (
           <section className="rounded-2xl bg-white/70 p-4 text-center">
             <div className="mb-3 flex justify-end">
-              <Link href="/" className="rounded-lg border border-slate-300 px-3 py-1 text-sm font-medium text-slate-600">
+              <Link
+                href="/"
+                className="rounded-lg border border-slate-300 px-3 py-1 text-sm font-medium text-slate-600"
+              >
                 Cancel
               </Link>
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900">Lacag Bixinta</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+              Lacag Bixinta
+            </h1>
             <p className="mt-2 text-xl text-slate-500">
               {method} • {formatAmount(amount)}
             </p>
@@ -243,9 +281,14 @@ export function PaymentProcessingPage() {
                 const isDone = index < activeStepIndex;
 
                 return (
-                  <div key={step.key} className="flex min-w-0 flex-1 flex-col items-center">
+                  <div
+                    key={step.key}
+                    className="flex min-w-0 flex-1 flex-col items-center"
+                  >
                     <div className="flex w-full items-center justify-center">
-                      {index > 0 && <span className="mr-2 h-[3px] w-full rounded-full bg-slate-200" />}
+                      {index > 0 && (
+                        <span className="mr-2 h-[3px] w-full rounded-full bg-slate-200" />
+                      )}
 
                       <span
                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-lg font-semibold transition ${
@@ -270,7 +313,9 @@ export function PaymentProcessingPage() {
                       )}
                     </div>
 
-                    <p className="mt-3 text-lg font-medium text-slate-600">{step.label}</p>
+                    <p className="mt-3 text-lg font-medium text-slate-600">
+                      {step.label}
+                    </p>
                   </div>
                 );
               })}
@@ -286,7 +331,9 @@ export function PaymentProcessingPage() {
             </div>
 
             <div className="mt-8 h-px w-full bg-slate-200" />
-            <p className="mt-6 text-2xl text-slate-500">Number: {formatPhone(phoneNumber)}</p>
+            <p className="mt-6 text-2xl text-slate-500">
+              Number: {formatPhone(phoneNumber)}
+            </p>
           </section>
         )}
 
@@ -301,7 +348,8 @@ export function PaymentProcessingPage() {
             </p>
             {batteryInfo && (
               <p className="mt-3 text-sm text-slate-600">
-                Battery <strong>{batteryInfo.batteryId}</strong> waa la furay Slot <strong>{batteryInfo.slotId}</strong>.
+                Battery <strong>{batteryInfo.batteryId}</strong> waa la furay
+                Slot <strong>{batteryInfo.slotId}</strong>.
               </p>
             )}
 
@@ -321,8 +369,12 @@ export function PaymentProcessingPage() {
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
               <CloseIcon className="h-8 w-8 text-red-600" />
             </div>
-            <h2 className="text-2xl font-bold text-red-700">Lacag bixinta ma dhicin</h2>
-            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>
+            <h2 className="text-2xl font-bold text-red-700">
+              Lacag bixinta ma dhicin
+            </h2>
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {errorMessage}
+            </p>
 
             <div className="mt-6">
               <Link
