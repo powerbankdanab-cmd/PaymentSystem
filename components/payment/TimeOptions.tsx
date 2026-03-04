@@ -34,7 +34,7 @@ export function TimeOptions({
         </p>
       </div>
 
-      <div className="mx-auto mt-4 grid max-w-[200px] grid-cols-1 gap-3 px-3 sm:mt-5 sm:gap-4 sm:px-4">
+      <div className="mx-auto mt-4 grid max-w-[160px] grid-cols-1 gap-3 px-3 sm:mt-5 sm:max-w-[180px] sm:gap-4 sm:px-4">
         {options.map((time) => {
           const isSelected = selectedAmount === time.amount;
 
