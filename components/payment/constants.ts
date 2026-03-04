@@ -1,8 +1,7 @@
 import { PaymentMethod, TimeOption } from "@/components/payment/types";
 
 export const TIME_OPTIONS: TimeOption[] = [
-  { label: "1 Saac", amount: 0.5, icon: "clock" },
-  { label: "2 Saac", amount: 1, icon: "timer" },
+  { label: "$0.75", amount: 0.75, icon: "clock" },
 ];
 
 export const PAYMENT_METHODS: PaymentMethod[] = ["EVC Plus", "ZAAD", "SAHAL"];
