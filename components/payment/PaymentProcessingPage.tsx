@@ -68,7 +68,6 @@ function parseMethod(value: string | null): PaymentMethod {
 
 export function PaymentProcessingPage() {
   const searchParams = useSearchParams();
-  const unlockStepTimerRef = useRef<number | null>(null);
   const paymentRequestAbortRef = useRef<AbortController | null>(null);
 
   const method = useMemo(
@@ -104,13 +103,6 @@ export function PaymentProcessingPage() {
   } | null>(null);
   const PAYMENT_REQUEST_TIMEOUT_MS = 45_000;
 
-  const clearUnlockStepTimer = () => {
-    if (unlockStepTimerRef.current !== null) {
-      window.clearTimeout(unlockStepTimerRef.current);
-      unlockStepTimerRef.current = null;
-    }
-  };
-
   const clearPaymentAbort = () => {
     if (paymentRequestAbortRef.current) {
       paymentRequestAbortRef.current.abort();
@@ -129,6 +121,18 @@ export function PaymentProcessingPage() {
 
     let cancelled = false;
 
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const id = window.setTimeout(() => resolve(), ms);
+        const check = () => {
+          if (cancelled) {
+            window.clearTimeout(id);
+            resolve();
+          }
+        };
+        check();
+      });
+
     const runPayment = async () => {
       setStatus("processing");
       setProcessingStep("verify");
@@ -139,22 +143,15 @@ export function PaymentProcessingPage() {
       let requestTimedOut = false;
 
       try {
-        if (!cancelled) {
-          setProcessingStep("charge");
-          setStatusMessage("Diraya lacagta...");
-        }
+        // Step 1: Verify — show for 2 seconds
+        await wait(2000);
+        if (cancelled) return;
 
-        clearUnlockStepTimer();
+        // Step 2: Charge — stays until API responds
+        setProcessingStep("charge");
+        setStatusMessage("Diraya lacagta...");
+
         clearPaymentAbort();
-        unlockStepTimerRef.current = window.setTimeout(() => {
-          if (cancelled) {
-            return;
-          }
-
-          setProcessingStep("unlock");
-          setStatusMessage("Furaya battery-ga...");
-        }, 650);
-
         const controller = new AbortController();
         const requestTimeout = window.setTimeout(() => {
           requestTimedOut = true;
@@ -177,12 +174,17 @@ export function PaymentProcessingPage() {
 
         const paymentData = await safeReadJson(paymentRes);
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
+
+        // Step 3: Unlock — only after API responds
+        setProcessingStep("unlock");
+        setStatusMessage("Furaya battery-ga...");
+
+        // Small delay so user sees the unlock step before result
+        await wait(1500);
+        if (cancelled) return;
 
         if (paymentRes.ok && paymentData.success) {
-          setProcessingStep("unlock");
           setStatus("success");
           setWaafiMessage(
             paymentData.waafiMessage || "Lacag bixinta waa guulaysatay!",
@@ -226,7 +228,6 @@ export function PaymentProcessingPage() {
         setStatus("failed");
         setErrorMessage(message);
       } finally {
-        clearUnlockStepTimer();
         paymentRequestAbortRef.current = null;
       }
     };
@@ -235,7 +236,6 @@ export function PaymentProcessingPage() {
 
     return () => {
       cancelled = true;
-      clearUnlockStepTimer();
       clearPaymentAbort();
     };
   }, [amount, method, phoneNumber]);
