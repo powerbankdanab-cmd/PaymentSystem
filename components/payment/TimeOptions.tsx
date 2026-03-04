@@ -3,6 +3,7 @@
 import { ClockIcon, TimerIcon } from "@/components/payment/Icons";
 import { cn, formatAmount } from "@/components/payment/helpers";
 import { TimeOption } from "@/components/payment/types";
+import { getStationName } from "@/lib/client/station";
 
 export function TimeOptions({
   options,
@@ -13,13 +14,13 @@ export function TimeOptions({
   selectedAmount: number;
   onSelect: (amount: number) => void;
 }) {
+  const stationName = getStationName();
+
   return (
     <>
       <div className="rounded-b-2xl bg-gradient-to-r from-pink-500 to-indigo-500 px-4 py-5 text-center text-white shadow-lg">
         <h1 className="text-xl font-black leading-tight">
-          Danab - Cafe Castello
-          <br />
-          Taleex-
+          Danab - {stationName}
         </h1>
         <p className="mt-1 text-sm text-white/90">Dooro Muddada kugu habboon</p>
       </div>
@@ -44,7 +45,9 @@ export function TimeOptions({
               <p
                 className={cn(
                   "text-sm font-bold",
-                  isSelected ? "text-pink-500" : "text-slate-700 dark:text-slate-200",
+                  isSelected
+                    ? "text-pink-500"
+                    : "text-slate-700 dark:text-slate-200",
                 )}
               >
                 {time.label}
@@ -52,7 +55,9 @@ export function TimeOptions({
               <p
                 className={cn(
                   "text-xs",
-                  isSelected ? "text-pink-400" : "text-slate-500 dark:text-slate-300",
+                  isSelected
+                    ? "text-pink-400"
+                    : "text-slate-500 dark:text-slate-300",
                 )}
               >
                 {formatAmount(time.amount)}

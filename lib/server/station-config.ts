@@ -4,30 +4,70 @@ export type StationConfig = {
   name: string;
 };
 
+const STATION_NAMES: Record<string, string> = {
+  "58": "Cafe Castello Taleex",
+  "59": "Cafe Castello Boondhere",
+  "60": "Cafe Java Taleex",
+  "61": "Cafe Java Airport",
+  "62": "Cafe Dilek Somalia",
+};
+
 export const STATION_CONFIGS: Record<string, StationConfig> = {
   "station58.danab.com": {
     code: "58",
     imei: process.env.STATION_58_IMEI || "",
-    name: "Castello Taleex",
+    name: STATION_NAMES["58"],
+  },
+  "station58.danab.site": {
+    code: "58",
+    imei: process.env.STATION_58_IMEI || "",
+    name: STATION_NAMES["58"],
   },
   "station59.danab.com": {
     code: "59",
     imei: process.env.STATION_59_IMEI || "",
-    name: "Station 59",
+    name: STATION_NAMES["59"],
+  },
+  "station59.danab.site": {
+    code: "59",
+    imei: process.env.STATION_59_IMEI || "",
+    name: STATION_NAMES["59"],
   },
   "station60.danab.com": {
     code: "60",
     imei: process.env.STATION_60_IMEI || "",
-    name: "Station 60",
+    name: STATION_NAMES["60"],
+  },
+  "station60.danab.site": {
+    code: "60",
+    imei: process.env.STATION_60_IMEI || "",
+    name: STATION_NAMES["60"],
   },
   "station61.danab.com": {
     code: "61",
     imei: process.env.STATION_61_IMEI || "",
-    name: "Station 61",
+    name: STATION_NAMES["61"],
+  },
+  "station61.danab.site": {
+    code: "61",
+    imei: process.env.STATION_61_IMEI || "",
+    name: STATION_NAMES["61"],
+  },
+  "station62.danab.com": {
+    code: "62",
+    imei: process.env.STATION_62_IMEI || "",
+    name: STATION_NAMES["62"],
+  },
+  "station62.danab.site": {
+    code: "62",
+    imei: process.env.STATION_62_IMEI || "",
+    name: STATION_NAMES["62"],
   },
 };
 
-export function getStationConfigByDomain(hostname: string): StationConfig | null {
+export function getStationConfigByDomain(
+  hostname: string,
+): StationConfig | null {
   const config = STATION_CONFIGS[hostname.toLowerCase()];
   if (config) {
     return config;
