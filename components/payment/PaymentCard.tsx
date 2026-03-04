@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AmountCard } from "@/components/payment/AmountCard";
-import { PHONE_PLACEHOLDER_BY_METHOD } from "@/components/payment/constants";
+import {
+  PAYMENT_METHODS,
+  PHONE_PLACEHOLDER_BY_METHOD,
+} from "@/components/payment/constants";
 import {
   cn,
   normalizePhone,
   validatePaymentInput,
 } from "@/components/payment/helpers";
+import { MethodPicker } from "@/components/payment/MethodPicker";
 import { PayButton } from "@/components/payment/PayButton";
 import { PaymentHeader } from "@/components/payment/PaymentHeader";
 import { PhoneInput } from "@/components/payment/PhoneInput";
@@ -29,8 +33,9 @@ export function PaymentCard({
 }) {
   const router = useRouter();
 
-  const selectedAmount = DEFAULT_AMOUNT;
-  const selectedMethod: PaymentMethod = DEFAULT_METHOD;
+  const [selectedAmount, setSelectedAmount] = useState(DEFAULT_AMOUNT);
+  const [selectedMethod, setSelectedMethod] =
+    useState<PaymentMethod>(DEFAULT_METHOD);
   const [phone, setPhone] = useState("");
   const [agreeRules, setAgreeRules] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +47,8 @@ export function PaymentCard({
     router.prefetch("/payment");
 
     const resetForm = () => {
+      setSelectedAmount(DEFAULT_AMOUNT);
+      setSelectedMethod(DEFAULT_METHOD);
       setPhone("");
       setAgreeRules(true);
       setErrors({});
@@ -116,6 +123,12 @@ export function PaymentCard({
 
       <section className="rounded-3xl pb-6">
         <AmountCard amount={selectedAmount} />
+
+        <MethodPicker
+          methods={PAYMENT_METHODS}
+          selectedMethod={selectedMethod}
+          onSelect={setSelectedMethod}
+        />
 
         <PhoneInput
           value={phone}

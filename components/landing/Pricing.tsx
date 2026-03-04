@@ -4,25 +4,12 @@ const PLANS = [
   {
     duration: "1 Saac",
     durationEn: "1 Hour",
-    price: "$0.50",
+    price: "$0.75",
     features: [
       "Fully charged power bank",
       "Compatible with all phones",
       "Lightning + USB-C + Micro USB",
       "Return at any station",
-    ],
-    popular: false,
-  },
-  {
-    duration: "2 Saac",
-    durationEn: "2 Hours",
-    price: "$1.00",
-    features: [
-      "Fully charged power bank",
-      "Compatible with all phones",
-      "Lightning + USB-C + Micro USB",
-      "Return at any station",
-      "Best value for longer use",
     ],
     popular: true,
   },
@@ -44,7 +31,7 @@ export function Pricing() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+        <div className="mx-auto mt-12 grid max-w-md gap-6">
           {PLANS.map((plan) => (
             <div
               key={plan.duration}
