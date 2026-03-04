@@ -1,20 +1,35 @@
 import { HttpError } from "@/lib/server/payment/errors";
-import { getAvailableBattery, releaseBattery } from "@/lib/server/payment/heycharge";
+import {
+  getAvailableBattery,
+  releaseBattery,
+} from "@/lib/server/payment/heycharge";
 import { isPhoneBlacklisted } from "@/lib/server/payment/blacklist";
-import { createRentalLog, isDuplicateTransaction } from "@/lib/server/payment/rentals";
+import {
+  createRentalLog,
+  isDuplicateTransaction,
+} from "@/lib/server/payment/rentals";
 import { getStationImei } from "@/lib/server/payment/station";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
-import { extractWaafiIds, isWaafiApproved, requestWaafiPayment } from "@/lib/server/payment/waafi";
+import {
+  extractWaafiIds,
+  isWaafiApproved,
+  requestWaafiPayment,
+} from "@/lib/server/payment/waafi";
 
-export async function processPayment(input: PaymentInput): Promise<PaymentPayload> {
+export async function processPayment(
+  input: PaymentInput,
+): Promise<PaymentPayload> {
   const { phoneNumber, amount } = input;
 
   const blacklisted = await isPhoneBlacklisted(phoneNumber);
   if (blacklisted) {
-    throw new HttpError(403, "You are blocked from renting. Please contact support.");
+    throw new HttpError(
+      403,
+      "You are blocked from renting. Please contact support.",
+    );
   }
 
-  const imei = getStationImei();
+  const imei = await getStationImei();
 
   const battery = await getAvailableBattery(imei);
   if (!battery) {
@@ -30,7 +45,8 @@ export async function processPayment(input: PaymentInput): Promise<PaymentPayloa
     throw new HttpError(400, "Payment not approved", { waafiResponse });
   }
 
-  const { transactionId, issuerTransactionId, referenceId } = extractWaafiIds(waafiResponse);
+  const { transactionId, issuerTransactionId, referenceId } =
+    extractWaafiIds(waafiResponse);
 
   if (transactionId) {
     const duplicate = await isDuplicateTransaction(transactionId);
@@ -73,7 +89,9 @@ export async function processPayment(input: PaymentInput): Promise<PaymentPayloa
     await rentalRef.delete();
 
     const unlockErrorMessage =
-      unlockError instanceof Error ? unlockError.message : "Battery unlock failed";
+      unlockError instanceof Error
+        ? unlockError.message
+        : "Battery unlock failed";
 
     throw new HttpError(500, "Battery unlock failed", {
       details: unlockErrorMessage,

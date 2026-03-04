@@ -1,7 +1,28 @@
+import { headers } from "next/headers";
+
 import { getRequiredEnv } from "@/lib/server/env";
+import { getStationConfigByDomain } from "@/lib/server/station-config";
 
-export const ACTIVE_STATION_CODE = "58";
+export async function getActiveStationCode() {
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
 
-export function getStationImei() {
-  return getRequiredEnv("STATION_CASTELLO_TALEEX");
+  const config = getStationConfigByDomain(host);
+  if (config?.code) {
+    return config.code;
+  }
+
+  return getRequiredEnv("STATION_CODE");
+}
+
+export async function getStationImei() {
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+
+  const config = getStationConfigByDomain(host);
+  if (config?.imei) {
+    return config.imei;
+  }
+
+  return getRequiredEnv("STATION_IMEI");
 }

@@ -1,7 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 import { getDb } from "@/lib/server/firebase-admin";
-import { ACTIVE_STATION_CODE } from "@/lib/server/payment/station";
+import { getActiveStationCode } from "@/lib/server/payment/station";
 
 export async function isDuplicateTransaction(transactionId: string) {
   const existing = await getDb()
@@ -32,9 +32,11 @@ export async function createRentalLog({
   issuerTransactionId: string | null;
   referenceId: string | null;
 }) {
+  const stationCode = await getActiveStationCode();
+
   return getDb().collection("rentals").add({
     imei,
-    stationCode: ACTIVE_STATION_CODE,
+    stationCode,
     battery_id: batteryId,
     slot_id: slotId,
     phoneNumber,
