@@ -1,11 +1,36 @@
 "use client";
 
 const STATIONS = [
-  { id: 58, name: "Cafe Castello Taleex", url: "https://station58.danab.site", area: "Taleex" },
-  { id: 59, name: "Feynuus Bowling", url: "https://station59.danab.site", area: "Mogadishu" },
-  { id: 60, name: "Java Taleex", url: "https://station60.danab.site", area: "Taleex" },
-  { id: 61, name: "Delik Somalia", url: "https://station61.danab.site", area: "Mogadishu" },
-  { id: 62, name: "Beydhan Coffe", url: "https://station62.danab.site", area: "Mogadishu" },
+  {
+    id: 58,
+    name: "Cafe Castello Taleex",
+    url: "https://station58.danab.site",
+    area: "Taleex",
+  },
+  {
+    id: 59,
+    name: "Feynuus Bowling",
+    url: "https://station59.danab.site",
+    area: "Mogadishu",
+  },
+  {
+    id: 60,
+    name: "Java Taleex",
+    url: "https://station60.danab.site",
+    area: "Taleex",
+  },
+  {
+    id: 61,
+    name: "Delik Somalia",
+    url: "https://station61.danab.site",
+    area: "Mogadishu",
+  },
+  {
+    id: 62,
+    name: "Beydhan Coffe",
+    url: "https://station62.danab.site",
+    area: "Mogadishu",
+  },
 ];
 
 export function Stations() {
@@ -13,10 +38,15 @@ export function Stations() {
     <section id="stations" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
-          <p className="text-sm font-bold uppercase tracking-widest text-pink-500">Our Locations</p>
-          <h2 className="mt-3 text-3xl font-black text-gray-900 sm:text-4xl">Find a Station</h2>
+          <p className="text-sm font-bold uppercase tracking-widest text-pink-500">
+            Our Locations
+          </p>
+          <h2 className="mt-3 text-3xl font-black text-gray-900 sm:text-4xl">
+            Find a Station
+          </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
-            Danab stations are placed at popular cafes and restaurants across Mogadishu. More locations coming soon.
+            Danab stations are placed at popular cafes and restaurants across
+            Mogadishu. More locations coming soon.
           </p>
         </div>
 
@@ -38,17 +68,30 @@ export function Stations() {
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">{station.area}</p>
               </div>
-              <svg className="h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-pink-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />
+              <svg
+                className="h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-pink-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m9 5 7 7-7 7"
+                />
               </svg>
             </a>
           ))}
         </div>
 
         <div className="mt-10 rounded-2xl border border-purple-100 bg-purple-50 p-6 text-center sm:p-8">
-          <h3 className="text-lg font-bold text-purple-900">Want Danab at Your Location?</h3>
+          <h3 className="text-lg font-bold text-purple-900">
+            Want Danab at Your Location?
+          </h3>
           <p className="mt-2 text-sm text-purple-700">
-            We&apos;re expanding! If you own a cafe, restaurant, or business and want a Danab station, contact us.
+            We&apos;re expanding! If you own a cafe, restaurant, or business and
+            want a Danab station, contact us.
           </p>
           <a
             href="#contact"

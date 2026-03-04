@@ -24,8 +24,8 @@ export function Hero() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-lg font-medium text-white/85 sm:text-xl">
-          Danab provides portable power bank rentals at your favorite cafes and restaurants. 
-          Scan, pay, and charge — it&apos;s that simple.
+          Danab provides portable power bank rentals at your favorite cafes and
+          restaurants. Scan, pay, and charge — it&apos;s that simple.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -46,15 +46,21 @@ export function Hero() {
         <div className="mt-16 grid grid-cols-3 gap-6 sm:gap-8">
           <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm sm:p-6">
             <p className="text-2xl font-black sm:text-3xl">5+</p>
-            <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">Active Stations</p>
+            <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">
+              Active Stations
+            </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm sm:p-6">
             <p className="text-2xl font-black sm:text-3xl">24/7</p>
-            <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">Available</p>
+            <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">
+              Available
+            </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm sm:p-6">
             <p className="text-2xl font-black sm:text-3xl">$0.50</p>
-            <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">Starting Price</p>
+            <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">
+              Starting Price
+            </p>
           </div>
         </div>
       </div>
