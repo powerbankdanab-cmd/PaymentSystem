@@ -11,7 +11,7 @@ export function PaymentScreen() {
   return (
     <div
       className={cn(
-        "relative min-h-screen overflow-hidden px-4 py-8 transition-colors sm:py-12",
+        "relative min-h-screen overflow-hidden px-3 py-6 transition-colors sm:px-4 sm:py-12",
         darkMode
           ? "bg-[radial-gradient(circle_at_top,#342352,#151527_40%,#090b14)]"
           : "bg-[#f5f5f7]",
