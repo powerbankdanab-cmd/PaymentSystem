@@ -12,7 +12,10 @@ export function normalizePhone(value: string) {
   return value.replace(/\D/g, "");
 }
 
-export function validatePaymentInput(phone: string, agreeRules: boolean): PaymentErrors {
+export function validatePaymentInput(
+  phone: string,
+  agreeRules: boolean,
+): PaymentErrors {
   const errors: PaymentErrors = {};
   const cleanPhone = normalizePhone(phone);
 
@@ -27,11 +30,18 @@ export function validatePaymentInput(phone: string, agreeRules: boolean): Paymen
   return errors;
 }
 
-export function mapBackendErrorMessage(message: string) {
+export function mapBackendErrorMessage(message: string, waafiMsg?: string) {
   const lowerMessage = message.toLowerCase();
 
   if (message.includes("No available battery")) {
-    return "Ma jiro baytari diyaar ah hadda, fadlan mar kale isku day";
+    return "Ma jiro baytari diyaar ah hadda. Station-ku waa la damiyay ama battery-gu way dhammaadeen.";
+  }
+
+  if (
+    message.includes("Station query timed out") ||
+    message.includes("Failed to query station")
+  ) {
+    return "Station-ku hadda ma shaqeynayo (offline). Fadlan isku day mar kale ama la xiriir: 616586503";
   }
 
   if (message.includes("already have an active rental")) {
@@ -43,11 +53,14 @@ export function mapBackendErrorMessage(message: string) {
   }
 
   if (message.includes("blocked") || message.includes("blacklist")) {
-    return "Macamiil waxa kugu maqan battery hore fadlan soo celi midkaas";
+    return "Adigu waxaad ku jirtaa liiska mamnuucida. Fadlan nala soo xiriir: 616586503";
   }
 
   if (message.includes("Payment not approved")) {
-    return "Lacag bixinta ma dhicin, fadlan hubi numberkaaga";
+    if (waafiMsg) {
+      return waafiMsg;
+    }
+    return "Lacag bixinta ma dhicin, fadlan hubi numberkaaga iyo haraagaaga";
   }
 
   if (lowerMessage.includes("timed out") || lowerMessage.includes("timeout")) {

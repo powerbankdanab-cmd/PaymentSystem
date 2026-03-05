@@ -42,7 +42,10 @@ export async function processPayment(
   });
 
   if (!isWaafiApproved(waafiResponse)) {
-    throw new HttpError(400, "Payment not approved", { waafiResponse });
+    throw new HttpError(400, "Payment not approved", {
+      waafiResponse,
+      waafiMsg: waafiResponse.responseMsg || "",
+    });
   }
 
   const { transactionId, issuerTransactionId, referenceId } =

@@ -24,6 +24,7 @@ type ApiResponse = {
   battery_id?: string;
   slot_id?: string;
   waafiMessage?: string;
+  waafiMsg?: string;
 };
 
 const PROCESSING_STEPS: Array<{ key: ProcessingStep; label: string }> = [
@@ -204,6 +205,7 @@ export function PaymentProcessingPage() {
         setErrorMessage(
           mapBackendErrorMessage(
             paymentData.error || "Khalad dhacay, fadlan mar kale isku day",
+            paymentData.waafiMsg,
           ),
         );
       } catch (error) {
