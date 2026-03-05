@@ -358,7 +358,7 @@ export function PaymentProcessingPage() {
             <div className="mt-6">
               <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-400 to-emerald-400 px-6 py-3 text-base font-bold text-white shadow-lg"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 to-emerald-400 px-6 py-3 text-base font-bold text-white shadow-lg"
               >
                 Samee lacag-bixin kale
               </Link>
@@ -381,7 +381,7 @@ export function PaymentProcessingPage() {
             <div className="mt-6">
               <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-400 to-emerald-400 px-6 py-3 text-base font-bold text-white shadow-lg"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 to-emerald-400 px-6 py-3 text-base font-bold text-white shadow-lg"
               >
                 Dib u isku day
               </Link>

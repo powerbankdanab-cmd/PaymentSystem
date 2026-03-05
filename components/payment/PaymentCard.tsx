@@ -117,7 +117,7 @@ export function PaymentCard({
       className={cn(
         "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-lg sm:p-5",
         darkMode
-          ? "border-white/10 bg-slate-800/90 text-white backdrop-blur-md shadow-xl"
+          ? "border-white/[0.08] bg-white/[0.06] text-white shadow-2xl shadow-violet-500/10 backdrop-blur-xl"
           : "border-gray-200 bg-white text-slate-800",
       )}
     >

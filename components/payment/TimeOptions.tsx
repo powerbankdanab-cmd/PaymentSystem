@@ -19,7 +19,7 @@ export function TimeOptions({
 
   return (
     <>
-      <div className="rounded-2xl bg-gradient-to-r from-violet-400 to-violet-300 px-4 py-3 text-center text-white shadow-md sm:px-5 sm:py-4">
+      <div className="mx-3 rounded-2xl bg-gradient-to-r from-violet-500 to-violet-400 px-4 py-3 text-center text-white shadow-md sm:mx-4 sm:px-5 sm:py-4">
         <h1 className="text-base font-black leading-tight sm:text-lg">
           {nameLines[0]}
           {nameLines[1] && (
