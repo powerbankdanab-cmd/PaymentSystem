@@ -34,6 +34,15 @@ const STATIONS = [
 ];
 
 export function Stations() {
+  const handleAdminClick = () => {
+    const pin = prompt("Enter admin PIN:");
+    if (pin?.toLowerCase() === "danab") {
+      window.open("https://www.danabadmins.online/", "_blank");
+    } else if (pin !== null) {
+      alert("Incorrect PIN");
+    }
+  };
+
   return (
     <section id="stations" className="bg-white px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
@@ -85,19 +94,31 @@ export function Stations() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 p-6 text-center sm:p-8">
+        <div className="relative mt-10 rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 p-6 text-center sm:p-8">
+          <button
+            onClick={handleAdminClick}
+            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-white/60 hover:text-gray-500"
+            aria-label="Admin"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
           <h3 className="text-lg font-bold text-gray-900">Admin System</h3>
           <p className="mt-2 text-sm text-gray-600">
             Manage stations, view rentals, and monitor your Danab network.
           </p>
-          <a
-            href="https://www.danabadmins.online/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-block rounded-xl bg-gradient-to-r from-pink-500 to-indigo-500 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg"
-          >
-            Open Admin Dashboard
-          </a>
         </div>
 
         <div className="mt-6 rounded-2xl border border-purple-100 bg-purple-50 p-6 text-center sm:p-8">

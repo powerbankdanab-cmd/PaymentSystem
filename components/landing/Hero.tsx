@@ -57,7 +57,7 @@ export function Hero() {
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm sm:p-6">
-            <p className="text-2xl font-black sm:text-3xl">$0.50</p>
+            <p className="text-2xl font-black sm:text-3xl">$0.75</p>
             <p className="mt-1 text-xs font-medium text-white/80 sm:text-sm">
               Starting Price
             </p>

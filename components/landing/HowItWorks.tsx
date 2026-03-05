@@ -26,8 +26,7 @@ const STEPS = [
   {
     number: "02",
     title: "Choose Duration",
-    description:
-      "Select how long you need the power bank — 1 hour for $0.50 or 2 hours for $1.00.",
+    description: "Select how long you need the power bank — 1 hour for $0.75.",
     icon: (
       <svg
         className="h-8 w-8"
