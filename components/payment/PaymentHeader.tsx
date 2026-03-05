@@ -13,14 +13,14 @@ export function PaymentHeader({
   return (
     <header className="mb-5 flex items-center justify-between px-1">
       <div className="mx-auto flex flex-1 justify-center">
-        <div
+        <img
+          src="/danab-logo.svg"
+          alt="Danab Powerbank Station"
           className={cn(
-            "flex h-16 w-16 items-center justify-center rounded-full shadow-md",
-            darkMode ? "bg-slate-800" : "bg-violet-100",
+            "h-14 w-auto sm:h-16",
+            darkMode && "brightness-0 invert",
           )}
-        >
-          <img src="/danab-logo.svg" alt="Danab" className="h-10 w-10" />
-        </div>
+        />
       </div>
 
       <button

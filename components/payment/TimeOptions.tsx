@@ -19,7 +19,7 @@ export function TimeOptions({
 
   return (
     <>
-      <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-5 text-center text-white shadow-lg sm:px-6 sm:py-6">
+      <div className="rounded-2xl bg-gradient-to-r from-violet-400 to-violet-300 px-4 py-5 text-center text-white shadow-lg sm:px-6 sm:py-6">
         <h1 className="text-lg font-black leading-tight sm:text-xl">
           {nameLines[0]}
           {nameLines[1] && (
@@ -50,21 +50,21 @@ export function TimeOptions({
               )}
             >
               {time.icon === "clock" ? (
-                <ClockIcon className="h-5 w-5 shrink-0 text-emerald-500 sm:h-6 sm:w-6" />
+                <ClockIcon className="h-5 w-5 shrink-0 text-emerald-400 sm:h-6 sm:w-6" />
               ) : (
-                <TimerIcon className="h-5 w-5 shrink-0 text-emerald-500 sm:h-6 sm:w-6" />
+                <TimerIcon className="h-5 w-5 shrink-0 text-emerald-400 sm:h-6 sm:w-6" />
               )}
               <span
                 className={cn(
                   "text-sm font-bold sm:text-base",
-                  isSelected ? "text-violet-600" : "text-gray-700",
+                  isSelected ? "text-violet-500" : "text-gray-700",
                 )}
               >
                 {formatAmount(time.amount)}
               </span>
 
               {isSelected && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full border border-emerald-400 bg-white text-[8px] text-emerald-500">
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full border border-emerald-300 bg-white text-[8px] text-emerald-400">
                   ✓
                 </span>
               )}

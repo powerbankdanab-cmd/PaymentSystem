@@ -13,7 +13,7 @@ export function PaymentScreen() {
       className={cn(
         "relative min-h-screen overflow-hidden px-3 py-6 transition-colors sm:px-4 sm:py-12",
         darkMode
-          ? "bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900"
+          ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
           : "bg-gray-100",
       )}
     >
