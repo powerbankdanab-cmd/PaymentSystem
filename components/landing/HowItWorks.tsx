@@ -25,27 +25,6 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "Choose Duration",
-    description: "Select how long you need the power bank — 1 hour for $0.75.",
-    icon: (
-      <svg
-        className="h-8 w-8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <circle cx="12" cy="12" r="9" />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 6.5v5l3.2 2"
-        />
-      </svg>
-    ),
-  },
-  {
-    number: "03",
     title: "Pay with Waafi",
     description:
       "Pay instantly using EVC Plus, ZAAD, or SAHAL — the payment methods you already use.",
@@ -63,7 +42,7 @@ const STEPS = [
     ),
   },
   {
-    number: "04",
+    number: "03",
     title: "Grab & Charge",
     description:
       "The station releases a power bank for you. Plug in and stay charged wherever you go.",
@@ -102,7 +81,7 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {STEPS.map((step) => (
             <div
               key={step.number}
