@@ -20,7 +20,7 @@ export function PhoneInput({
       </label>
       <div
         className={cn(
-          "flex overflow-hidden rounded-xl border shadow-sm transition-all focus-within:ring-2 focus-within:ring-pink-300",
+          "flex overflow-hidden rounded-xl border shadow-sm transition-all focus-within:ring-2 focus-within:ring-violet-300",
           error ? "border-red-500 bg-red-50" : "border-gray-200 bg-white",
         )}
       >

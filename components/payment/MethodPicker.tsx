@@ -27,7 +27,7 @@ export function MethodPicker({
               className={cn(
                 "rounded-full px-3 py-2.5 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] sm:px-4 sm:py-3",
                 isActive
-                  ? "bg-pink-500 text-white"
+                  ? "bg-violet-500 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200",
               )}
             >

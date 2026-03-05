@@ -250,12 +250,12 @@ export function PaymentProcessingPage() {
     <div
       className={cn(
         "relative min-h-screen overflow-hidden px-4 py-8 transition-colors sm:py-12",
-        "bg-[radial-gradient(circle_at_top,#f7ddf3,#f0ebff_35%,#f8f8ff)]",
+        "bg-[radial-gradient(circle_at_top,#ede9fe,#f0ebff_35%,#f8f8ff)]",
       )}
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-100px] top-[-80px] h-72 w-72 rounded-full bg-pink-400/20 blur-3xl" />
-        <div className="absolute bottom-[-110px] right-[-70px] h-72 w-72 rounded-full bg-indigo-400/20 blur-3xl" />
+        <div className="absolute left-[-100px] top-[-80px] h-72 w-72 rounded-full bg-violet-400/20 blur-3xl" />
+        <div className="absolute bottom-[-110px] right-[-70px] h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
       </div>
 
       <main className="relative mx-auto w-full max-w-lg rounded-[28px] border border-white/60 bg-white/90 p-5 text-slate-800 shadow-[0_25px_70px_rgba(94,46,140,.25)] backdrop-blur-md">
@@ -358,7 +358,7 @@ export function PaymentProcessingPage() {
             <div className="mt-6">
               <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-indigo-500 px-6 py-3 text-base font-bold text-white shadow-lg"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-emerald-500 px-6 py-3 text-base font-bold text-white shadow-lg"
               >
                 Samee lacag-bixin kale
               </Link>
@@ -381,7 +381,7 @@ export function PaymentProcessingPage() {
             <div className="mt-6">
               <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-indigo-500 px-6 py-3 text-base font-bold text-white shadow-lg"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-emerald-500 px-6 py-3 text-base font-bold text-white shadow-lg"
               >
                 Dib u isku day
               </Link>

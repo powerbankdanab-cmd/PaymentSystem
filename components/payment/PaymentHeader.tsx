@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchiveIcon, MoonIcon, SunIcon } from "@/components/payment/Icons";
+import { MoonIcon, SunIcon } from "@/components/payment/Icons";
 import { cn } from "@/components/payment/helpers";
 
 export function PaymentHeader({
@@ -16,10 +16,10 @@ export function PaymentHeader({
         <div
           className={cn(
             "flex h-16 w-16 items-center justify-center rounded-full shadow-md",
-            darkMode ? "bg-slate-800" : "bg-pink-100",
+            darkMode ? "bg-slate-800" : "bg-violet-100",
           )}
         >
-          <ArchiveIcon className={cn("h-9 w-9", darkMode ? "text-purple-300" : "text-pink-500")} />
+          <img src="/danab-logo.svg" alt="Danab" className="h-10 w-10" />
         </div>
       </div>
 
@@ -33,7 +33,11 @@ export function PaymentHeader({
             : "border-slate-200 bg-white text-purple-700 hover:bg-slate-50",
         )}
       >
-        {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+        {darkMode ? (
+          <SunIcon className="h-5 w-5" />
+        ) : (
+          <MoonIcon className="h-5 w-5" />
+        )}
       </button>
     </header>
   );

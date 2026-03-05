@@ -21,8 +21,8 @@ export function RulesAgreement({
         className={cn(
           "flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left shadow-sm transition",
           checked
-            ? "border-pink-500 bg-pink-50"
-            : "border-gray-200 bg-white hover:border-pink-300",
+            ? "border-violet-500 bg-violet-50"
+            : "border-gray-200 bg-white hover:border-violet-300",
           error && "border-red-400",
         )}
       >
@@ -30,7 +30,7 @@ export function RulesAgreement({
           className={cn(
             "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2",
             checked
-              ? "border-pink-500 bg-pink-500 text-white"
+              ? "border-violet-500 bg-violet-500 text-white"
               : "border-gray-300 bg-white text-transparent",
           )}
         >
@@ -44,7 +44,7 @@ export function RulesAgreement({
             href="/rules"
             target="_blank"
             onClick={(event) => event.stopPropagation()}
-            className="text-xs font-medium text-pink-500 underline decoration-dotted underline-offset-2 hover:text-pink-600"
+            className="text-xs font-medium text-violet-500 underline decoration-dotted underline-offset-2 hover:text-violet-600"
           >
             Shuruudaha iyo xeerarka isticmaalka Danab
           </Link>
