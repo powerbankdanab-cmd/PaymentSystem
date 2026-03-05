@@ -2,7 +2,6 @@
 
 const PLANS = [
   {
-    name: "Power Bank Rental",
     price: "$0.75",
     features: [
       "Fully charged power bank",
@@ -33,7 +32,7 @@ export function Pricing() {
         <div className="mx-auto mt-12 grid max-w-md gap-6">
           {PLANS.map((plan) => (
             <div
-              key={plan.name}
+              key={plan.price}
               className={`relative overflow-hidden rounded-3xl border-2 p-8 shadow-sm transition-all hover:shadow-lg ${
                 plan.popular
                   ? "border-pink-500 bg-white"
@@ -45,8 +44,6 @@ export function Pricing() {
                   Popular
                 </div>
               )}
-
-              <p className="text-sm font-bold text-pink-500">{plan.name}</p>
 
               <p className="mt-4 text-5xl font-black text-gray-900">
                 {plan.price}
