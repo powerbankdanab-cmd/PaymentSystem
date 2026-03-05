@@ -85,7 +85,22 @@ export function Stations() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-purple-100 bg-purple-50 p-6 text-center sm:p-8">
+        <div className="mt-10 rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 p-6 text-center sm:p-8">
+          <h3 className="text-lg font-bold text-gray-900">Admin System</h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Manage stations, view rentals, and monitor your Danab network.
+          </p>
+          <a
+            href="https://www.danabadmins.online/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-xl bg-gradient-to-r from-pink-500 to-indigo-500 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg"
+          >
+            Open Admin Dashboard
+          </a>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-purple-100 bg-purple-50 p-6 text-center sm:p-8">
           <h3 className="text-lg font-bold text-purple-900">
             Want Danab at Your Location?
           </h3>
