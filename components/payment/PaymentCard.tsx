@@ -117,7 +117,7 @@ export function PaymentCard({
       className={cn(
         "relative mx-auto w-full max-w-md rounded-3xl border p-4 shadow-lg sm:p-5",
         darkMode
-          ? "border-violet-500/20 bg-slate-900 text-white shadow-violet-500/10"
+          ? "border-white/10 bg-slate-800/90 text-white backdrop-blur-md shadow-xl"
           : "border-gray-200 bg-white text-slate-800",
       )}
     >
@@ -154,9 +154,18 @@ export function PaymentCard({
         <PayButton loading={isSubmitting} onClick={handlePay} />
       </section>
 
-      <footer className="mt-6 px-4 py-3 text-center text-xs text-gray-600 sm:text-sm">
+      <footer
+        className={cn(
+          "mt-6 px-4 py-3 text-center text-xs sm:text-sm",
+          darkMode ? "text-gray-400" : "text-gray-600",
+        )}
+      >
         Call us any feedback or problem{" "}
-        <span className="font-bold text-gray-900">616586503 / 616251068</span>
+        <span
+          className={cn("font-bold", darkMode ? "text-white" : "text-gray-900")}
+        >
+          616586503 / 616251068
+        </span>
       </footer>
     </main>
   );

@@ -19,8 +19,8 @@ export function TimeOptions({
 
   return (
     <>
-      <div className="rounded-2xl bg-gradient-to-r from-violet-400 to-violet-300 px-4 py-5 text-center text-white shadow-lg sm:px-6 sm:py-6">
-        <h1 className="text-lg font-black leading-tight sm:text-xl">
+      <div className="rounded-2xl bg-gradient-to-r from-violet-400 to-violet-300 px-4 py-3 text-center text-white shadow-md sm:px-5 sm:py-4">
+        <h1 className="text-base font-black leading-tight sm:text-lg">
           {nameLines[0]}
           {nameLines[1] && (
             <>
@@ -29,9 +29,6 @@ export function TimeOptions({
             </>
           )}
         </h1>
-        <p className="mt-2 text-sm font-medium text-white/90">
-          Dooro Muddada kugu habboon
-        </p>
       </div>
 
       <div className="mx-auto mt-4 grid w-[200px] grid-cols-1 gap-3 sm:mt-5 sm:w-[210px] sm:gap-4">
