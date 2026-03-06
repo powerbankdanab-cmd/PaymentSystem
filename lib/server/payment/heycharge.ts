@@ -8,7 +8,7 @@ type HeyChargeStationResponse = {
 };
 
 const HEYCHARGE_QUERY_TIMEOUT_MS = 12_000;
-const HEYCHARGE_UNLOCK_TIMEOUT_MS = 15_000;
+const HEYCHARGE_UNLOCK_TIMEOUT_MS = 25_000;
 
 function buildHeyChargeAuthHeader() {
   const apiKey = getRequiredEnv("HEYCHARGE_API_KEY");

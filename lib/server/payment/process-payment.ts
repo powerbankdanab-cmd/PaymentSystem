@@ -7,6 +7,7 @@ import { isPhoneBlacklisted } from "@/lib/server/payment/blacklist";
 import {
   createRentalLog,
   isDuplicateTransaction,
+  updateRentalUnlockStatus,
 } from "@/lib/server/payment/rentals";
 import { getStationImei } from "@/lib/server/payment/station";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
@@ -75,33 +76,77 @@ export async function processPayment(
 
   let unlock: unknown = null;
   let unlockAttempts = 0;
-  const MAX_UNLOCK_ATTEMPTS = 3;
+  const MAX_UNLOCK_ATTEMPTS = 5;
+  let lastUnlockError: unknown = null;
+  let currentBattery = battery;
 
   while (unlockAttempts < MAX_UNLOCK_ATTEMPTS) {
     unlockAttempts++;
+
+    if (unlockAttempts > 1) {
+      try {
+        const freshBattery = await getAvailableBattery(imei);
+        if (freshBattery) {
+          currentBattery = freshBattery;
+          console.log(
+            `Retry ${unlockAttempts}: using fresh battery=${freshBattery.battery_id} slot=${freshBattery.slot_id} for phone=${phoneNumber}`,
+          );
+        } else {
+          console.warn(
+            `Retry ${unlockAttempts}: no fresh battery found, retrying with original battery=${currentBattery.battery_id}`,
+          );
+        }
+      } catch (queryError) {
+        console.warn(
+          `Retry ${unlockAttempts}: failed to re-query batteries, retrying with current battery=${currentBattery.battery_id}:`,
+          queryError instanceof Error ? queryError.message : queryError,
+        );
+      }
+    }
+
     try {
       unlock = await releaseBattery({
         imei,
-        batteryId: battery.battery_id,
-        slotId: battery.slot_id,
+        batteryId: currentBattery.battery_id,
+        slotId: currentBattery.slot_id,
       });
+      lastUnlockError = null;
       break;
     } catch (unlockError) {
-      if (unlockAttempts >= MAX_UNLOCK_ATTEMPTS) {
-        console.error(
-          `Battery unlock failed after ${MAX_UNLOCK_ATTEMPTS} attempts for phone=${phoneNumber} txn=${transactionId}:`,
-          unlockError instanceof Error ? unlockError.message : unlockError,
-        );
-      } else {
-        await new Promise((r) => setTimeout(r, 1500));
+      lastUnlockError = unlockError;
+      console.error(
+        `Battery unlock attempt ${unlockAttempts}/${MAX_UNLOCK_ATTEMPTS} failed for battery=${currentBattery.battery_id} phone=${phoneNumber} txn=${transactionId}:`,
+        unlockError instanceof Error ? unlockError.message : unlockError,
+      );
+
+      if (unlockAttempts < MAX_UNLOCK_ATTEMPTS) {
+        const backoffMs = Math.min(2000 * unlockAttempts, 8000);
+        await new Promise((r) => setTimeout(r, backoffMs));
       }
     }
   }
 
+  if (lastUnlockError) {
+    await updateRentalUnlockStatus(rentalRef.id, "unlock_failed");
+
+    throw new HttpError(
+      502,
+      "Payment was received but the battery could not be released. Please contact support.",
+      {
+        transactionId,
+        batteryId: currentBattery.battery_id,
+        slotId: currentBattery.slot_id,
+        unlockAttempts,
+      },
+    );
+  }
+
+  await updateRentalUnlockStatus(rentalRef.id, "unlocked");
+
   return {
     success: true,
-    battery_id: battery.battery_id,
-    slot_id: battery.slot_id,
+    battery_id: currentBattery.battery_id,
+    slot_id: currentBattery.slot_id,
     unlock,
     waafiMessage: waafiResponse.responseMsg || "Payment successful",
     waafiResponse,

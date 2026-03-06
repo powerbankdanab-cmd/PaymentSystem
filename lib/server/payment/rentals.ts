@@ -42,9 +42,20 @@ export async function createRentalLog({
     phoneNumber,
     amount,
     status: "rented",
+    unlockStatus: "pending",
     transactionId,
     issuerTransactionId,
     referenceId,
     timestamp: Timestamp.now(),
+  });
+}
+
+export async function updateRentalUnlockStatus(
+  rentalId: string,
+  unlockStatus: "unlocked" | "unlock_failed",
+) {
+  return getDb().collection("rentals").doc(rentalId).update({
+    unlockStatus,
+    unlockUpdatedAt: Timestamp.now(),
   });
 }

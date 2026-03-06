@@ -21,7 +21,7 @@ function parseAndValidateBody(body: PaymentRequestBody) {
   return { phoneNumber, amount } as const;
 }
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
