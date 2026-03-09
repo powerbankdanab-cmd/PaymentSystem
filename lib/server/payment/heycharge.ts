@@ -93,11 +93,6 @@ export async function releaseBattery({
   url.searchParams.set("battery_id", batteryId);
   url.searchParams.set("slot_id", slotId);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, HEYCHARGE_UNLOCK_TIMEOUT_MS);
-
   let response: Response;
   try {
     response = await fetch(url.toString(), {
@@ -106,16 +101,9 @@ export async function releaseBattery({
         Authorization: buildHeyChargeAuthHeader(),
       },
       cache: "no-store",
-      signal: controller.signal,
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Battery unlock timed out");
-    }
-
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 
   const payload = await parseResponseBody(response);

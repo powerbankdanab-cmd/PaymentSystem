@@ -102,7 +102,7 @@ export function PaymentProcessingPage() {
     batteryId: string;
     slotId: string;
   } | null>(null);
-  const PAYMENT_REQUEST_TIMEOUT_MS = 100_000;
+  const PAYMENT_REQUEST_TIMEOUT_MS = 280_000;
 
   const clearPaymentAbort = () => {
     if (paymentRequestAbortRef.current) {
