@@ -1,5 +1,6 @@
 import { getRequiredEnv } from "@/lib/server/env";
 
+import { getDb } from "@/lib/server/firebase-admin";
 import { parseResponseBody, toErrorMessage } from "@/lib/server/payment/http";
 import { Battery } from "@/lib/server/payment/types";
 
@@ -62,7 +63,7 @@ export async function getAvailableBattery(imei: string) {
     ? payloadObject.batteries
     : [];
 
-  const available = batteries
+  const hardwareAvailable = batteries
     .filter(
       (battery) =>
         battery.lock_status === "1" &&
@@ -75,6 +76,23 @@ export async function getAvailableBattery(imei: string) {
         Number.parseInt(b.battery_capacity, 10) -
         Number.parseInt(a.battery_capacity, 10),
     );
+
+  // Filter out batteries that already have an active rental in Firestore
+  const rentedSnap = await getDb()
+    .collection("rentals")
+    .where("imei", "==", imei)
+    .where("status", "==", "rented")
+    .get();
+
+  const rentedBatteryIds = new Set<string>();
+  for (const doc of rentedSnap.docs) {
+    const bid = doc.data().battery_id;
+    if (bid) rentedBatteryIds.add(bid);
+  }
+
+  const available = hardwareAvailable.filter(
+    (battery) => !rentedBatteryIds.has(battery.battery_id),
+  );
 
   return available[0] || null;
 }
