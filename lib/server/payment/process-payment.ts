@@ -1,6 +1,8 @@
 import { HttpError } from "@/lib/server/payment/errors";
 import {
   getAvailableBattery,
+  markProblemSlot,
+  queryStationBatteries,
   releaseBattery,
 } from "@/lib/server/payment/heycharge";
 import { isPhoneBlacklisted } from "@/lib/server/payment/blacklist";
@@ -128,6 +130,46 @@ export async function processPayment(
 
   if (lastUnlockError) {
     await updateRentalUnlockStatus(rentalRef.id, "unlock_failed");
+
+    // Recheck slot status: is the battery still there?
+    try {
+      const recheckBatteries = await queryStationBatteries(imei);
+      const stillThere = recheckBatteries.find(
+        (b) =>
+          b.battery_id === currentBattery.battery_id &&
+          b.slot_id === currentBattery.slot_id,
+      );
+
+      if (stillThere) {
+        // Battery is still in the slot — this is a problem slot
+        await markProblemSlot(
+          imei,
+          currentBattery.slot_id,
+          currentBattery.battery_id,
+          `Unlock failed after ${unlockAttempts} attempts, battery still present`,
+        );
+      } else {
+        // Battery was ejected despite the error — update rental to unlocked
+        console.error(
+          `Battery ${currentBattery.battery_id} not in slot ${currentBattery.slot_id} after timeout — likely ejected successfully`,
+        );
+        await updateRentalUnlockStatus(rentalRef.id, "unlocked");
+
+        return {
+          success: true,
+          battery_id: currentBattery.battery_id,
+          slot_id: currentBattery.slot_id,
+          unlock: null,
+          waafiMessage: waafiResponse.responseMsg || "Payment successful",
+          waafiResponse,
+        };
+      }
+    } catch (recheckError) {
+      console.error(
+        "Failed to recheck slot status after unlock failure:",
+        recheckError instanceof Error ? recheckError.message : recheckError,
+      );
+    }
 
     throw new HttpError(
       502,

@@ -1,5 +1,6 @@
 import { getRequiredEnv } from "@/lib/server/env";
 
+import { getDb } from "@/lib/server/firebase-admin";
 import { parseResponseBody, toErrorMessage } from "@/lib/server/payment/http";
 import { Battery } from "@/lib/server/payment/types";
 
@@ -16,7 +17,11 @@ function buildHeyChargeAuthHeader() {
   return `Basic ${basicToken}`;
 }
 
-export async function getAvailableBattery(imei: string) {
+/**
+ * Query HeyCharge for all batteries currently in the station.
+ * Reusable for both initial selection and post-timeout recheck.
+ */
+export async function queryStationBatteries(imei: string): Promise<Battery[]> {
   const domain = getRequiredEnv("HEYCHARGE_DOMAIN");
   const controller = new AbortController();
   const timeout = setTimeout(() => {
@@ -58,9 +63,54 @@ export async function getAvailableBattery(imei: string) {
       ? (payload as HeyChargeStationResponse)
       : null;
 
-  const batteries = Array.isArray(payloadObject?.batteries)
-    ? payloadObject.batteries
-    : [];
+  return Array.isArray(payloadObject?.batteries) ? payloadObject.batteries : [];
+}
+
+/**
+ * Get problem slot IDs for a station from Firestore.
+ */
+async function getProblemSlotIds(imei: string): Promise<Set<string>> {
+  const snap = await getDb()
+    .collection("problem_slots")
+    .where("imei", "==", imei)
+    .where("resolved", "==", false)
+    .get();
+
+  const ids = new Set<string>();
+  for (const doc of snap.docs) {
+    const slotId = doc.data().slot_id;
+    if (slotId) ids.add(slotId);
+  }
+  return ids;
+}
+
+/**
+ * Mark a slot as a problem slot in Firestore.
+ */
+export async function markProblemSlot(
+  imei: string,
+  slotId: string,
+  batteryId: string,
+  reason: string,
+) {
+  await getDb().collection("problem_slots").add({
+    imei,
+    slot_id: slotId,
+    battery_id: batteryId,
+    reason,
+    resolved: false,
+    createdAt: new Date(),
+  });
+  console.error(
+    `⚠️ Marked slot ${slotId} on station ${imei} as problem: ${reason}`,
+  );
+}
+
+export async function getAvailableBattery(imei: string) {
+  const batteries = await queryStationBatteries(imei);
+
+  // Get problem slots to avoid
+  const problemSlots = await getProblemSlotIds(imei);
 
   const available = batteries
     .filter(
@@ -68,7 +118,8 @@ export async function getAvailableBattery(imei: string) {
         battery.lock_status === "1" &&
         Number.parseInt(battery.battery_capacity, 10) >= 60 &&
         battery.battery_abnormal === "0" &&
-        battery.cable_abnormal === "0",
+        battery.cable_abnormal === "0" &&
+        !problemSlots.has(battery.slot_id),
     )
     .sort(
       (a, b) =>
@@ -93,6 +144,11 @@ export async function releaseBattery({
   url.searchParams.set("battery_id", batteryId);
   url.searchParams.set("slot_id", slotId);
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, HEYCHARGE_UNLOCK_TIMEOUT_MS);
+
   let response: Response;
   try {
     response = await fetch(url.toString(), {
@@ -101,9 +157,15 @@ export async function releaseBattery({
         Authorization: buildHeyChargeAuthHeader(),
       },
       cache: "no-store",
+      signal: controller.signal,
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Battery unlock timed out (25s)");
+    }
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 
   const payload = await parseResponseBody(response);
