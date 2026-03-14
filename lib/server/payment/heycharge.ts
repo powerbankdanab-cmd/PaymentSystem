@@ -1,8 +1,10 @@
 import { getRequiredEnv } from "@/lib/server/env";
 
 import { getDb } from "@/lib/server/firebase-admin";
+import { getReservedBatteryIds } from "@/lib/server/payment/battery-lock";
 import { parseResponseBody, toErrorMessage } from "@/lib/server/payment/http";
 import { Battery } from "@/lib/server/payment/types";
+import { getActiveRentedBatteryIds } from "@/lib/server/payment/rentals";
 
 type HeyChargeStationResponse = {
   batteries?: Battery[];
@@ -107,10 +109,12 @@ export async function markProblemSlot(
 }
 
 export async function getAvailableBattery(imei: string) {
-  const batteries = await queryStationBatteries(imei);
-
-  // Get problem slots to avoid
-  const problemSlots = await getProblemSlotIds(imei);
+  const [batteries, problemSlots, reservedIds, rentedIds] = await Promise.all([
+    queryStationBatteries(imei),
+    getProblemSlotIds(imei),
+    getReservedBatteryIds(imei),
+    getActiveRentedBatteryIds(imei),
+  ]);
 
   const available = batteries
     .filter(
@@ -119,7 +123,9 @@ export async function getAvailableBattery(imei: string) {
         Number.parseInt(battery.battery_capacity, 10) >= 60 &&
         battery.battery_abnormal === "0" &&
         battery.cable_abnormal === "0" &&
-        !problemSlots.has(battery.slot_id),
+        !problemSlots.has(battery.slot_id) &&
+        !reservedIds.has(battery.battery_id) &&
+        !rentedIds.has(battery.battery_id),
     )
     .sort(
       (a, b) =>

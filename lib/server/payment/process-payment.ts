@@ -1,3 +1,7 @@
+import {
+  releaseReservation,
+  reserveBattery,
+} from "@/lib/server/payment/battery-lock";
 import { HttpError } from "@/lib/server/payment/errors";
 import {
   getAvailableBattery,
@@ -34,17 +38,51 @@ export async function processPayment(
 
   const imei = await getStationImei();
 
-  const battery = await getAvailableBattery(imei);
+  // ── Atomic battery reservation ──────────────────────────────────
+  // Try up to 3 different batteries in case another user reserves
+  // the first one between our query and our reservation attempt.
+  const MAX_RESERVE_ATTEMPTS = 3;
+  let battery = null;
+
+  for (let attempt = 0; attempt < MAX_RESERVE_ATTEMPTS; attempt++) {
+    const candidate = await getAvailableBattery(imei);
+    if (!candidate) break;
+
+    const reserved = await reserveBattery(
+      imei,
+      candidate.battery_id,
+      phoneNumber,
+    );
+    if (reserved) {
+      battery = candidate;
+      break;
+    }
+    // Another user grabbed this battery; loop and try the next one
+    console.warn(
+      `Reserve attempt ${attempt + 1}: battery ${candidate.battery_id} already taken, trying next`,
+    );
+  }
+
   if (!battery) {
     throw new HttpError(400, "No available battery ≥ 60%");
   }
 
-  const waafiResponse = await requestWaafiPayment({
-    phoneNumber,
-    amount,
-  });
+  // ── Payment ─────────────────────────────────────────────────────
+  let waafiResponse;
+  try {
+    waafiResponse = await requestWaafiPayment({
+      phoneNumber,
+      amount,
+    });
+  } catch (paymentError) {
+    // Payment request failed — release the reservation so the battery is available again
+    await releaseReservation(imei, battery.battery_id);
+    throw paymentError;
+  }
 
   if (!isWaafiApproved(waafiResponse)) {
+    // Payment not approved — release the reservation
+    await releaseReservation(imei, battery.battery_id);
     throw new HttpError(400, "Payment not approved", {
       waafiResponse,
       waafiMsg: waafiResponse.responseMsg || "",
@@ -57,6 +95,7 @@ export async function processPayment(
   if (transactionId) {
     const duplicate = await isDuplicateTransaction(transactionId);
     if (duplicate) {
+      await releaseReservation(imei, battery.battery_id);
       return {
         success: true,
         message: "Payment already processed",
@@ -75,6 +114,11 @@ export async function processPayment(
     issuerTransactionId,
     referenceId,
   });
+
+  // Rental is now in Firestore — release the short-lived reservation.
+  // The active rental record itself now protects this battery from being
+  // assigned to another user (via getActiveRentedBatteryIds).
+  await releaseReservation(imei, battery.battery_id);
 
   let unlock: unknown = null;
   let unlockAttempts = 0;

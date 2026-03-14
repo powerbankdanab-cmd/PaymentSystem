@@ -59,3 +59,24 @@ export async function updateRentalUnlockStatus(
     unlockUpdatedAt: Timestamp.now(),
   });
 }
+
+/**
+ * Get all battery IDs that currently have an active rental (status="rented")
+ * for a given station. Used to prevent assigning the same battery to two users.
+ */
+export async function getActiveRentedBatteryIds(
+  imei: string,
+): Promise<Set<string>> {
+  const snap = await getDb()
+    .collection("rentals")
+    .where("imei", "==", imei)
+    .where("status", "==", "rented")
+    .get();
+
+  const ids = new Set<string>();
+  for (const doc of snap.docs) {
+    const batteryId = doc.data().battery_id;
+    if (batteryId) ids.add(batteryId);
+  }
+  return ids;
+}
