@@ -134,56 +134,44 @@ export async function processPayment(
     reservedBatteryId = null;
 
     let unlock: unknown = null;
-    let unlockAttempts = 0;
-    const MAX_UNLOCK_ATTEMPTS = 5;
+    const unlockAttempts = 1;
     let lastUnlockError: unknown = null;
     const currentBattery = battery;
 
-    while (unlockAttempts < MAX_UNLOCK_ATTEMPTS) {
-      unlockAttempts++;
+    try {
+      unlock = await releaseBattery({
+        imei,
+        batteryId: currentBattery.battery_id,
+        slotId: currentBattery.slot_id,
+      });
+      lastUnlockError = null;
+    } catch (unlockError) {
+      lastUnlockError = unlockError;
+      console.error(
+        `Battery unlock failed for battery=${currentBattery.battery_id} phone=${phoneNumber} txn=${transactionId}:`,
+        unlockError instanceof Error ? unlockError.message : unlockError,
+      );
 
       try {
-        unlock = await releaseBattery({
-          imei,
-          batteryId: currentBattery.battery_id,
-          slotId: currentBattery.slot_id,
-        });
-        lastUnlockError = null;
-        break;
-      } catch (unlockError) {
-        lastUnlockError = unlockError;
-        console.error(
-          `Battery unlock attempt ${unlockAttempts}/${MAX_UNLOCK_ATTEMPTS} failed for battery=${currentBattery.battery_id} phone=${phoneNumber} txn=${transactionId}:`,
-          unlockError instanceof Error ? unlockError.message : unlockError,
+        const recheckBatteries = await queryStationBatteries(imei);
+        const stillThere = recheckBatteries.find(
+          (b) =>
+            b.battery_id === currentBattery.battery_id &&
+            b.slot_id === currentBattery.slot_id,
         );
 
-        try {
-          const recheckBatteries = await queryStationBatteries(imei);
-          const stillThere = recheckBatteries.find(
-            (b) =>
-              b.battery_id === currentBattery.battery_id &&
-              b.slot_id === currentBattery.slot_id,
+        if (!stillThere) {
+          console.error(
+            `Battery ${currentBattery.battery_id} is no longer in slot ${currentBattery.slot_id} after unlock error — treating as successful eject`,
           );
-
-          if (!stillThere) {
-            console.error(
-              `Battery ${currentBattery.battery_id} is no longer in slot ${currentBattery.slot_id} after failed unlock attempt ${unlockAttempts} — treating as successful eject`,
-            );
-            lastUnlockError = null;
-            unlock = null;
-            break;
-          }
-        } catch (recheckError) {
-          console.warn(
-            `Failed to recheck slot status after unlock attempt ${unlockAttempts}:`,
-            recheckError instanceof Error ? recheckError.message : recheckError,
-          );
+          lastUnlockError = null;
+          unlock = null;
         }
-
-        if (unlockAttempts < MAX_UNLOCK_ATTEMPTS) {
-          const backoffMs = Math.min(2000 * unlockAttempts, 8000);
-          await new Promise((r) => setTimeout(r, backoffMs));
-        }
+      } catch (recheckError) {
+        console.warn(
+          "Failed to recheck slot status after unlock error:",
+          recheckError instanceof Error ? recheckError.message : recheckError,
+        );
       }
     }
 
@@ -210,7 +198,7 @@ export async function processPayment(
         } else {
           // Battery was ejected despite the error — update rental to unlocked
           console.error(
-            `Battery ${currentBattery.battery_id} not in slot ${currentBattery.slot_id} after timeout — likely ejected successfully`,
+            `Battery ${currentBattery.battery_id} not in slot ${currentBattery.slot_id} after unlock error — likely ejected successfully`,
           );
           await updateRentalUnlockStatus(rentalRef.id, "unlocked");
 
