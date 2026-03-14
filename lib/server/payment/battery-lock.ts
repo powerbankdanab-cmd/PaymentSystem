@@ -8,14 +8,18 @@ import { getDb } from "@/lib/server/firebase-admin";
  * This prevents stuck reservations from permanently blocking a battery.
  */
 const RESERVATION_TTL_MS = 2 * 60 * 1000;
+const PHONE_PAYMENT_LOCK_TTL_MS = 6 * 60 * 1000;
 
 /**
  * Build a deterministic document ID for a battery reservation.
- * Using a deterministic ID + create() gives us an atomic "lock":
- * only the first caller wins; all others get a ALREADY_EXISTS error.
+ * Using a deterministic ID means every battery has a single lock document.
  */
 function reservationDocId(imei: string, batteryId: string): string {
   return `${imei}_${batteryId}`;
+}
+
+function phonePaymentLockDocId(phoneNumber: string): string {
+  return encodeURIComponent(phoneNumber);
 }
 
 /**
@@ -24,7 +28,7 @@ function reservationDocId(imei: string, batteryId: string): string {
  * Uses Firestore runTransaction to:
  * 1. Check if a reservation doc already exists and is still valid (not expired).
  * 2. If no valid reservation exists, create/overwrite one for this phone number.
- * 3. If a valid reservation exists for a different phone, the battery is taken.
+ * 3. If a valid reservation exists, the battery is taken.
  *
  * Returns true if the reservation was acquired, false if the battery is already taken.
  */
@@ -48,12 +52,7 @@ export async function reserveBattery(
         const age = Date.now() - createdAt.toMillis();
 
         if (age < RESERVATION_TTL_MS) {
-          // Active reservation exists
-          if (data.phoneNumber === phoneNumber) {
-            // Same phone already reserved this battery (retry scenario)
-            return true;
-          }
-          // Another user holds the reservation
+          // Active reservation exists, so this battery is already taken.
           return false;
         }
         // Reservation expired — overwrite it
@@ -131,4 +130,67 @@ export async function getReservedBatteryIds(
     }
   }
   return ids;
+}
+
+/**
+ * Acquire a short-lived lock for a phone number so double taps / retries
+ * cannot start a second payment flow while the first one is still running.
+ */
+export async function acquirePhonePaymentLock(
+  phoneNumber: string,
+): Promise<boolean> {
+  const db = getDb();
+  const docRef = db
+    .collection("phone_payment_locks")
+    .doc(phonePaymentLockDocId(phoneNumber));
+
+  try {
+    return await db.runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+
+      if (snap.exists) {
+        const data = snap.data()!;
+        const createdAt = data.createdAt as Timestamp;
+        const age = Date.now() - createdAt.toMillis();
+
+        if (age < PHONE_PAYMENT_LOCK_TTL_MS) {
+          return false;
+        }
+      }
+
+      tx.set(docRef, {
+        phoneNumber,
+        createdAt: Timestamp.now(),
+      });
+
+      return true;
+    });
+  } catch (error) {
+    console.error(
+      `Failed to acquire payment lock for phone ${phoneNumber}:`,
+      error instanceof Error ? error.message : error,
+    );
+    return false;
+  }
+}
+
+/**
+ * Release the short-lived in-flight payment lock for a phone number.
+ */
+export async function releasePhonePaymentLock(
+  phoneNumber: string,
+): Promise<void> {
+  const db = getDb();
+  const docRef = db
+    .collection("phone_payment_locks")
+    .doc(phonePaymentLockDocId(phoneNumber));
+
+  try {
+    await docRef.delete();
+  } catch (error) {
+    console.warn(
+      `Failed to release payment lock for phone ${phoneNumber}:`,
+      error instanceof Error ? error.message : error,
+    );
+  }
 }

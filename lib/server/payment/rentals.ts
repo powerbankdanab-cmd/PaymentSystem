@@ -80,3 +80,18 @@ export async function getActiveRentedBatteryIds(
   }
   return ids;
 }
+
+/**
+ * Check whether this phone number already has any active rental.
+ * Uses a single-field query so no extra composite index is required.
+ */
+export async function hasActiveRentalForPhone(
+  phoneNumber: string,
+): Promise<boolean> {
+  const snap = await getDb()
+    .collection("rentals")
+    .where("phoneNumber", "==", phoneNumber)
+    .get();
+
+  return snap.docs.some((doc) => doc.data().status === "rented");
+}

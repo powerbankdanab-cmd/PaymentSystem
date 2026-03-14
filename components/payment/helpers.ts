@@ -48,6 +48,10 @@ export function mapBackendErrorMessage(message: string, waafiMsg?: string) {
     return "Waxaad hore u haysataa battery, fadlan soo celi midkaas ka hor intaadan mid kale kireysanin";
   }
 
+  if (message.includes("already being processed")) {
+    return "Lacag bixinta number-kan horey ayay u socotaa. Fadlan sug wax yar oo hubi natiijada codsigii hore.";
+  }
+
   if (message.includes("battery is already rented")) {
     return "Battery-gan waa la kireystay, fadlan mar kale isku day";
   }

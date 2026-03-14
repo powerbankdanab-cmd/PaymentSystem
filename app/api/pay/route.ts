@@ -14,7 +14,9 @@ type PaymentRequestBody = {
 
 function parseAndValidateBody(body: PaymentRequestBody) {
   const phoneNumber =
-    typeof body.phoneNumber === "string" ? body.phoneNumber.trim() : "";
+    typeof body.phoneNumber === "string"
+      ? body.phoneNumber.replace(/\D/g, "")
+      : "";
 
   const amount = Number(body.amount);
 
