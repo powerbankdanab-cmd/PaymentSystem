@@ -71,25 +71,55 @@ export async function markRentalReturnedAfterFailedUnlock(
   });
 }
 
+const FIRESTORE_IN_QUERY_LIMIT = 10;
+
+function chunkValues<T>(values: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
 /**
- * Get all battery IDs that currently have an active rental (status="rented")
- * for a given station. Used to prevent assigning the same battery to two users.
+ * Get battery IDs from the provided candidate list that currently have any
+ * active rental (status="rented"), regardless of which station created it.
+ * This prevents cross-station duplicate assignment if a battery was returned
+ * to a different station before the old rental got closed.
  */
 export async function getActiveRentedBatteryIds(
-  imei: string,
+  batteryIds: string[],
 ): Promise<Set<string>> {
-  const snap = await getDb()
-    .collection("rentals")
-    .where("imei", "==", imei)
-    .where("status", "==", "rented")
-    .get();
+  const uniqueBatteryIds = Array.from(
+    new Set(batteryIds.filter((batteryId) => !!batteryId)),
+  );
 
-  const ids = new Set<string>();
-  for (const doc of snap.docs) {
-    const batteryId = doc.data().battery_id;
-    if (batteryId) ids.add(batteryId);
+  if (uniqueBatteryIds.length === 0) {
+    return new Set<string>();
   }
-  return ids;
+
+  const activeIds = new Set<string>();
+
+  for (const batteryIdChunk of chunkValues(
+    uniqueBatteryIds,
+    FIRESTORE_IN_QUERY_LIMIT,
+  )) {
+    const snap = await getDb()
+      .collection("rentals")
+      .where("battery_id", "in", batteryIdChunk)
+      .get();
+
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      if (data.status === "rented" && data.battery_id) {
+        activeIds.add(data.battery_id);
+      }
+    }
+  }
+
+  return activeIds;
 }
 
 /**

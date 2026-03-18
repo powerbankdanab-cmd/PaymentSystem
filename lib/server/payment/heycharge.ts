@@ -108,11 +108,13 @@ export async function markProblemSlot(
 }
 
 export async function getAvailableBattery(imei: string) {
-  const [batteries, problemSlots, reservedIds, rentedIds] = await Promise.all([
-    queryStationBatteries(imei),
+  const batteries = await queryStationBatteries(imei);
+  const batteryIds = batteries.map((battery) => battery.battery_id);
+
+  const [problemSlots, reservedIds, rentedIds] = await Promise.all([
     getProblemSlotIds(imei),
     getReservedBatteryIds(imei),
-    getActiveRentedBatteryIds(imei),
+    getActiveRentedBatteryIds(batteryIds),
   ]);
 
   const available = batteries
