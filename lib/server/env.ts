@@ -86,3 +86,10 @@ export function getRequiredEnv(name: string) {
 
   return value;
 }
+
+export function getOptionalEnv(name: string) {
+  ensureServerEnvLoaded();
+
+  const value = process.env[name];
+  return value && value.trim() ? value : null;
+}

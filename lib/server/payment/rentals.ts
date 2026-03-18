@@ -60,6 +60,17 @@ export async function updateRentalUnlockStatus(
   });
 }
 
+export async function markRentalReturnedAfterFailedUnlock(
+  rentalId: string,
+  note: string,
+) {
+  return getDb().collection("rentals").doc(rentalId).update({
+    status: "returned",
+    returnedAt: Timestamp.now(),
+    note,
+  });
+}
+
 /**
  * Get all battery IDs that currently have an active rental (status="rented")
  * for a given station. Used to prevent assigning the same battery to two users.

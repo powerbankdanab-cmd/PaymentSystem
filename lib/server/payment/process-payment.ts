@@ -16,15 +16,48 @@ import {
   createRentalLog,
   hasActiveRentalForPhone,
   isDuplicateTransaction,
+  markRentalReturnedAfterFailedUnlock,
   updateRentalUnlockStatus,
 } from "@/lib/server/payment/rentals";
-import { getStationImei } from "@/lib/server/payment/station";
+import { getActiveStationCode, getStationImei } from "@/lib/server/payment/station";
+import { notifyPaidButNotEjected } from "@/lib/server/payment/telegram";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
 import {
   extractWaafiIds,
   isWaafiApproved,
   requestWaafiPayment,
 } from "@/lib/server/payment/waafi";
+
+const MAX_UNLOCK_ATTEMPTS = 2;
+const UNLOCK_RETRY_DELAY_MS = 1_500;
+
+type BatteryPresence = "present" | "missing" | "unknown";
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function checkBatteryPresence(
+  imei: string,
+  batteryId: string,
+  slotId: string,
+): Promise<BatteryPresence> {
+  try {
+    const stationBatteries = await queryStationBatteries(imei);
+    const stillThere = stationBatteries.some(
+      (battery) =>
+        battery.battery_id === batteryId && battery.slot_id === slotId,
+    );
+
+    return stillThere ? "present" : "missing";
+  } catch (error) {
+    console.warn(
+      "Failed to recheck slot status after unlock attempt:",
+      error instanceof Error ? error.message : error,
+    );
+    return "unknown";
+  }
+}
 
 export async function processPayment(
   input: PaymentInput,
@@ -41,6 +74,7 @@ export async function processPayment(
   }
 
   const imei = await getStationImei();
+  const stationCode = await getActiveStationCode();
   const phoneLockAcquired = await acquirePhonePaymentLock(phoneNumber);
   if (!phoneLockAcquired) {
     throw new HttpError(
@@ -134,89 +168,117 @@ export async function processPayment(
     reservedBatteryId = null;
 
     let unlock: unknown = null;
-    const unlockAttempts = 1;
+    let unlockAttempts = 0;
     let lastUnlockError: unknown = null;
     const currentBattery = battery;
+    let lastKnownPresence: BatteryPresence = "unknown";
 
-    try {
-      unlock = await releaseBattery({
-        imei,
-        batteryId: currentBattery.battery_id,
-        slotId: currentBattery.slot_id,
-      });
-      lastUnlockError = null;
-    } catch (unlockError) {
-      lastUnlockError = unlockError;
-      console.error(
-        `Battery unlock failed for battery=${currentBattery.battery_id} phone=${phoneNumber} txn=${transactionId}:`,
-        unlockError instanceof Error ? unlockError.message : unlockError,
-      );
+    for (let attempt = 1; attempt <= MAX_UNLOCK_ATTEMPTS; attempt++) {
+      unlockAttempts = attempt;
 
       try {
-        const recheckBatteries = await queryStationBatteries(imei);
-        const stillThere = recheckBatteries.find(
-          (b) =>
-            b.battery_id === currentBattery.battery_id &&
-            b.slot_id === currentBattery.slot_id,
+        unlock = await releaseBattery({
+          imei,
+          batteryId: currentBattery.battery_id,
+          slotId: currentBattery.slot_id,
+        });
+        lastUnlockError = null;
+        break;
+      } catch (unlockError) {
+        lastUnlockError = unlockError;
+        console.error(
+          `Battery unlock failed on attempt ${attempt}/${MAX_UNLOCK_ATTEMPTS} for battery=${currentBattery.battery_id} phone=${phoneNumber} txn=${transactionId}:`,
+          unlockError instanceof Error ? unlockError.message : unlockError,
         );
 
-        if (!stillThere) {
+        lastKnownPresence = await checkBatteryPresence(
+          imei,
+          currentBattery.battery_id,
+          currentBattery.slot_id,
+        );
+
+        if (lastKnownPresence === "missing") {
           console.error(
             `Battery ${currentBattery.battery_id} is no longer in slot ${currentBattery.slot_id} after unlock error — treating as successful eject`,
           );
           lastUnlockError = null;
           unlock = null;
+          break;
         }
-      } catch (recheckError) {
-        console.warn(
-          "Failed to recheck slot status after unlock error:",
-          recheckError instanceof Error ? recheckError.message : recheckError,
-        );
+
+        if (attempt < MAX_UNLOCK_ATTEMPTS) {
+          console.warn(
+            `Battery ${currentBattery.battery_id} still not confirmed ejected after attempt ${attempt}; retrying in ${UNLOCK_RETRY_DELAY_MS}ms`,
+          );
+          await delay(UNLOCK_RETRY_DELAY_MS);
+        }
       }
     }
 
     if (lastUnlockError) {
+      if (lastKnownPresence !== "present") {
+        lastKnownPresence = await checkBatteryPresence(
+          imei,
+          currentBattery.battery_id,
+          currentBattery.slot_id,
+        );
+      }
+
+      if (lastKnownPresence === "missing") {
+        console.error(
+          `Battery ${currentBattery.battery_id} not in slot ${currentBattery.slot_id} after unlock error — likely ejected successfully`,
+        );
+        await updateRentalUnlockStatus(rentalRef.id, "unlocked");
+
+        return {
+          success: true,
+          battery_id: currentBattery.battery_id,
+          slot_id: currentBattery.slot_id,
+          unlock: null,
+          waafiMessage: waafiResponse.responseMsg || "Payment successful",
+          waafiResponse,
+        };
+      }
+
       await updateRentalUnlockStatus(rentalRef.id, "unlock_failed");
 
-      // Recheck slot status: is the battery still there?
-      try {
-        const recheckBatteries = await queryStationBatteries(imei);
-        const stillThere = recheckBatteries.find(
-          (b) =>
-            b.battery_id === currentBattery.battery_id &&
-            b.slot_id === currentBattery.slot_id,
-        );
+      const failureNote =
+        lastKnownPresence === "present"
+          ? `Unlock failed after ${unlockAttempts} attempts, battery still present`
+          : `Unlock failed after ${unlockAttempts} attempts, slot status could not be rechecked`;
 
-        if (stillThere) {
-          // Battery is still in the slot — this is a problem slot
+      if (lastKnownPresence === "present") {
+        try {
           await markProblemSlot(
             imei,
             currentBattery.slot_id,
             currentBattery.battery_id,
-            `Unlock failed after ${unlockAttempts} attempts, battery still present`,
+            failureNote,
           );
-        } else {
-          // Battery was ejected despite the error — update rental to unlocked
+          await markRentalReturnedAfterFailedUnlock(rentalRef.id, failureNote);
+        } catch (recoveryError) {
           console.error(
-            `Battery ${currentBattery.battery_id} not in slot ${currentBattery.slot_id} after unlock error — likely ejected successfully`,
+            "Failed to mark problem slot or close failed unlock rental:",
+            recoveryError instanceof Error
+              ? recoveryError.message
+              : recoveryError,
           );
-          await updateRentalUnlockStatus(rentalRef.id, "unlocked");
-
-          return {
-            success: true,
-            battery_id: currentBattery.battery_id,
-            slot_id: currentBattery.slot_id,
-            unlock: null,
-            waafiMessage: waafiResponse.responseMsg || "Payment successful",
-            waafiResponse,
-          };
         }
-      } catch (recheckError) {
-        console.error(
-          "Failed to recheck slot status after unlock failure:",
-          recheckError instanceof Error ? recheckError.message : recheckError,
-        );
       }
+
+      await notifyPaidButNotEjected({
+        phoneNumber,
+        amount,
+        imei,
+        stationCode,
+        batteryId: currentBattery.battery_id,
+        slotId: currentBattery.slot_id,
+        transactionId,
+        issuerTransactionId,
+        referenceId,
+        unlockAttempts,
+        reason: failureNote,
+      });
 
       throw new HttpError(
         502,
