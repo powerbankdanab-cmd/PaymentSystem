@@ -11,6 +11,7 @@ type HeyChargeStationResponse = {
 };
 
 const HEYCHARGE_QUERY_TIMEOUT_MS = 12_000;
+export const MIN_AVAILABLE_BATTERY_PERCENT = 50;
 
 function buildHeyChargeAuthHeader() {
   const apiKey = getRequiredEnv("HEYCHARGE_API_KEY");
@@ -121,7 +122,8 @@ export async function getAvailableBattery(imei: string) {
     .filter(
       (battery) =>
         battery.lock_status === "1" &&
-        Number.parseInt(battery.battery_capacity, 10) >= 60 &&
+        Number.parseInt(battery.battery_capacity, 10) >=
+          MIN_AVAILABLE_BATTERY_PERCENT &&
         battery.battery_abnormal === "0" &&
         battery.cable_abnormal === "0" &&
         !problemSlots.has(battery.slot_id) &&

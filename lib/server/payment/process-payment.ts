@@ -8,6 +8,7 @@ import { HttpError } from "@/lib/server/payment/errors";
 import {
   getAvailableBattery,
   markProblemSlot,
+  MIN_AVAILABLE_BATTERY_PERCENT,
   queryStationBatteries,
   releaseBattery,
 } from "@/lib/server/payment/heycharge";
@@ -120,7 +121,10 @@ export async function processPayment(
     }
 
     if (!battery) {
-      throw new HttpError(400, "No available battery ≥ 60%");
+      throw new HttpError(
+        400,
+        `No available battery ≥ ${MIN_AVAILABLE_BATTERY_PERCENT}%`,
+      );
     }
 
     // ── Payment ───────────────────────────────────────────────────
