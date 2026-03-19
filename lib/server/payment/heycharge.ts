@@ -11,7 +11,7 @@ type HeyChargeStationResponse = {
 };
 
 const HEYCHARGE_QUERY_TIMEOUT_MS = 12_000;
-export const MIN_AVAILABLE_BATTERY_PERCENT = 50;
+export const MIN_AVAILABLE_BATTERY_PERCENT = 60;
 
 function buildHeyChargeAuthHeader() {
   const apiKey = getRequiredEnv("HEYCHARGE_API_KEY");
