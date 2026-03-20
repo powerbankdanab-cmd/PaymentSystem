@@ -4,14 +4,27 @@ import { getDb } from "@/lib/server/firebase-admin";
 import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { getActiveStationCode } from "@/lib/server/payment/station";
 
-export async function isDuplicateTransaction(transactionId: string) {
-  const existing = await getDb()
-    .collection("rentals")
-    .where("transactionId", "==", transactionId)
-    .limit(1)
-    .get();
+export const PRIMARY_RENTALS_COLLECTION = "rentalsTrans";
+export const LEGACY_RENTALS_COLLECTION = "rentals";
 
-  return !existing.empty;
+function getRentalReadCollections() {
+  return Array.from(
+    new Set([PRIMARY_RENTALS_COLLECTION, LEGACY_RENTALS_COLLECTION]),
+  );
+}
+
+export async function isDuplicateTransaction(transactionId: string) {
+  const snapshots = await Promise.all(
+    getRentalReadCollections().map((collectionName) =>
+      getDb()
+        .collection(collectionName)
+        .where("transactionId", "==", transactionId)
+        .limit(1)
+        .get(),
+    ),
+  );
+
+  return snapshots.some((snapshot) => !snapshot.empty);
 }
 
 export async function createRentalLog({
@@ -37,7 +50,7 @@ export async function createRentalLog({
 }) {
   const stationCode = await getActiveStationCode();
 
-  return getDb().collection("rentals").add({
+  return getDb().collection(PRIMARY_RENTALS_COLLECTION).add({
     imei,
     stationCode,
     battery_id: normalizeBatteryId(batteryId) || batteryId,
@@ -58,7 +71,7 @@ export async function updateRentalUnlockStatus(
   rentalId: string,
   unlockStatus: "unlocked" | "unlock_failed",
 ) {
-  return getDb().collection("rentals").doc(rentalId).update({
+  return getDb().collection(PRIMARY_RENTALS_COLLECTION).doc(rentalId).update({
     unlockStatus,
     unlockUpdatedAt: Timestamp.now(),
   });
@@ -68,7 +81,7 @@ export async function markRentalReturnedAfterFailedUnlock(
   rentalId: string,
   note: string,
 ) {
-  return getDb().collection("rentals").doc(rentalId).update({
+  return getDb().collection(PRIMARY_RENTALS_COLLECTION).doc(rentalId).update({
     status: "returned",
     returnedAt: Timestamp.now(),
     note,
@@ -92,16 +105,22 @@ export async function getActiveRentedBatteryIds(
 
   const activeIds = new Set<string>();
   const candidateIds = new Set(uniqueBatteryIds);
-  const snap = await getDb()
-    .collection("rentals")
-    .where("status", "==", "rented")
-    .get();
+  const snapshots = await Promise.all(
+    getRentalReadCollections().map((collectionName) =>
+      getDb()
+        .collection(collectionName)
+        .where("status", "==", "rented")
+        .get(),
+    ),
+  );
 
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    const normalizedBatteryId = normalizeBatteryId(data.battery_id);
-    if (normalizedBatteryId && candidateIds.has(normalizedBatteryId)) {
-      activeIds.add(normalizedBatteryId);
+  for (const snapshot of snapshots) {
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const normalizedBatteryId = normalizeBatteryId(data.battery_id);
+      if (normalizedBatteryId && candidateIds.has(normalizedBatteryId)) {
+        activeIds.add(normalizedBatteryId);
+      }
     }
   }
 
@@ -115,10 +134,16 @@ export async function getActiveRentedBatteryIds(
 export async function hasActiveRentalForPhone(
   phoneNumber: string,
 ): Promise<boolean> {
-  const snap = await getDb()
-    .collection("rentals")
-    .where("phoneNumber", "==", phoneNumber)
-    .get();
+  const snapshots = await Promise.all(
+    getRentalReadCollections().map((collectionName) =>
+      getDb()
+        .collection(collectionName)
+        .where("phoneNumber", "==", phoneNumber)
+        .get(),
+    ),
+  );
 
-  return snap.docs.some((doc) => doc.data().status === "rented");
+  return snapshots.some((snapshot) =>
+    snapshot.docs.some((doc) => doc.data().status === "rented"),
+  );
 }
