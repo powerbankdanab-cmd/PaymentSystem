@@ -4,27 +4,16 @@ import { getDb } from "@/lib/server/firebase-admin";
 import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { getActiveStationCode } from "@/lib/server/payment/station";
 
-export const PRIMARY_RENTALS_COLLECTION = "rentalsTrans";
-export const LEGACY_RENTALS_COLLECTION = "rentals";
-
-function getRentalReadCollections() {
-  return Array.from(
-    new Set([PRIMARY_RENTALS_COLLECTION, LEGACY_RENTALS_COLLECTION]),
-  );
-}
+export const RENTALS_COLLECTION = "rentalsTrans";
 
 export async function isDuplicateTransaction(transactionId: string) {
-  const snapshots = await Promise.all(
-    getRentalReadCollections().map((collectionName) =>
-      getDb()
-        .collection(collectionName)
-        .where("transactionId", "==", transactionId)
-        .limit(1)
-        .get(),
-    ),
-  );
+  const snapshot = await getDb()
+    .collection(RENTALS_COLLECTION)
+    .where("transactionId", "==", transactionId)
+    .limit(1)
+    .get();
 
-  return snapshots.some((snapshot) => !snapshot.empty);
+  return !snapshot.empty;
 }
 
 export async function createRentalLog({
@@ -50,7 +39,7 @@ export async function createRentalLog({
 }) {
   const stationCode = await getActiveStationCode();
 
-  return getDb().collection(PRIMARY_RENTALS_COLLECTION).add({
+  return getDb().collection(RENTALS_COLLECTION).add({
     imei,
     stationCode,
     battery_id: normalizeBatteryId(batteryId) || batteryId,
@@ -71,7 +60,7 @@ export async function updateRentalUnlockStatus(
   rentalId: string,
   unlockStatus: "unlocked" | "unlock_failed",
 ) {
-  return getDb().collection(PRIMARY_RENTALS_COLLECTION).doc(rentalId).update({
+  return getDb().collection(RENTALS_COLLECTION).doc(rentalId).update({
     unlockStatus,
     unlockUpdatedAt: Timestamp.now(),
   });
@@ -81,7 +70,7 @@ export async function markRentalReturnedAfterFailedUnlock(
   rentalId: string,
   note: string,
 ) {
-  return getDb().collection(PRIMARY_RENTALS_COLLECTION).doc(rentalId).update({
+  return getDb().collection(RENTALS_COLLECTION).doc(rentalId).update({
     status: "returned",
     returnedAt: Timestamp.now(),
     note,
@@ -97,7 +86,9 @@ export async function markRentalReturnedAfterFailedUnlock(
 export async function getActiveRentedBatteryIds(
   batteryIds: string[],
 ): Promise<Set<string>> {
-  const uniqueBatteryIds = Array.from(new Set(batteryIds.map(normalizeBatteryId).filter(Boolean)));
+  const uniqueBatteryIds = Array.from(
+    new Set(batteryIds.map(normalizeBatteryId).filter(Boolean)),
+  );
 
   if (uniqueBatteryIds.length === 0) {
     return new Set<string>();
@@ -105,22 +96,16 @@ export async function getActiveRentedBatteryIds(
 
   const activeIds = new Set<string>();
   const candidateIds = new Set(uniqueBatteryIds);
-  const snapshots = await Promise.all(
-    getRentalReadCollections().map((collectionName) =>
-      getDb()
-        .collection(collectionName)
-        .where("status", "==", "rented")
-        .get(),
-    ),
-  );
+  const snapshot = await getDb()
+    .collection(RENTALS_COLLECTION)
+    .where("status", "==", "rented")
+    .get();
 
-  for (const snapshot of snapshots) {
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      const normalizedBatteryId = normalizeBatteryId(data.battery_id);
-      if (normalizedBatteryId && candidateIds.has(normalizedBatteryId)) {
-        activeIds.add(normalizedBatteryId);
-      }
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const normalizedBatteryId = normalizeBatteryId(data.battery_id);
+    if (normalizedBatteryId && candidateIds.has(normalizedBatteryId)) {
+      activeIds.add(normalizedBatteryId);
     }
   }
 
@@ -134,16 +119,10 @@ export async function getActiveRentedBatteryIds(
 export async function hasActiveRentalForPhone(
   phoneNumber: string,
 ): Promise<boolean> {
-  const snapshots = await Promise.all(
-    getRentalReadCollections().map((collectionName) =>
-      getDb()
-        .collection(collectionName)
-        .where("phoneNumber", "==", phoneNumber)
-        .get(),
-    ),
-  );
+  const snapshot = await getDb()
+    .collection(RENTALS_COLLECTION)
+    .where("phoneNumber", "==", phoneNumber)
+    .get();
 
-  return snapshots.some((snapshot) =>
-    snapshot.docs.some((doc) => doc.data().status === "rented"),
-  );
+  return snapshot.docs.some((doc) => doc.data().status === "rented");
 }
