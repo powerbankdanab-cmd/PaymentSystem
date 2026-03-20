@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 import { getDb } from "@/lib/server/firebase-admin";
+import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 
 /**
  * Reservation TTL in milliseconds (2 minutes).
@@ -15,7 +16,7 @@ const PHONE_PAYMENT_LOCK_TTL_MS = 6 * 60 * 1000;
  * Using a deterministic ID means every battery has a single lock document.
  */
 function reservationDocId(imei: string, batteryId: string): string {
-  return `${imei}_${batteryId}`;
+  return `${imei}_${normalizeBatteryId(batteryId) || batteryId}`;
 }
 
 function phonePaymentLockDocId(phoneNumber: string): string {
@@ -38,9 +39,10 @@ export async function reserveBattery(
   phoneNumber: string,
 ): Promise<boolean> {
   const db = getDb();
+  const normalizedBatteryId = normalizeBatteryId(batteryId) || batteryId;
   const docRef = db
     .collection("battery_reservations")
-    .doc(reservationDocId(imei, batteryId));
+    .doc(reservationDocId(imei, normalizedBatteryId));
 
   try {
     const success = await db.runTransaction(async (tx) => {
@@ -60,7 +62,7 @@ export async function reserveBattery(
 
       tx.set(docRef, {
         imei,
-        battery_id: batteryId,
+        battery_id: normalizedBatteryId,
         phoneNumber,
         createdAt: Timestamp.now(),
       });
@@ -126,7 +128,7 @@ export async function getReservedBatteryIds(
     const age = now - createdAt.toMillis();
 
     if (age < RESERVATION_TTL_MS && data.battery_id) {
-      ids.add(data.battery_id);
+      ids.add(normalizeBatteryId(data.battery_id));
     }
   }
   return ids;

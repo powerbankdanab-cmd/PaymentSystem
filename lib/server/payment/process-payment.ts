@@ -4,6 +4,7 @@ import {
   releasePhonePaymentLock,
   reserveBattery,
 } from "@/lib/server/payment/battery-lock";
+import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { HttpError } from "@/lib/server/payment/errors";
 import {
   getAvailableBattery,
@@ -47,7 +48,8 @@ async function checkBatteryPresence(
     const stationBatteries = await queryStationBatteries(imei);
     const stillThere = stationBatteries.some(
       (battery) =>
-        battery.battery_id === batteryId && battery.slot_id === slotId,
+        normalizeBatteryId(battery.battery_id) === normalizeBatteryId(batteryId) &&
+        battery.slot_id === slotId,
     );
 
     return stillThere ? "present" : "missing";

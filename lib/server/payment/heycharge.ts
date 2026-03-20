@@ -1,6 +1,7 @@
 import { getRequiredEnv } from "@/lib/server/env";
 
 import { getDb } from "@/lib/server/firebase-admin";
+import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { getReservedBatteryIds } from "@/lib/server/payment/battery-lock";
 import { parseResponseBody, toErrorMessage } from "@/lib/server/payment/http";
 import { Battery } from "@/lib/server/payment/types";
@@ -98,7 +99,7 @@ export async function markProblemSlot(
   await getDb().collection("problem_slots").add({
     imei,
     slot_id: slotId,
-    battery_id: batteryId,
+    battery_id: normalizeBatteryId(batteryId) || batteryId,
     reason,
     resolved: false,
     createdAt: new Date(),
@@ -127,8 +128,8 @@ export async function getAvailableBattery(imei: string) {
         battery.battery_abnormal === "0" &&
         battery.cable_abnormal === "0" &&
         !problemSlots.has(battery.slot_id) &&
-        !reservedIds.has(battery.battery_id) &&
-        !rentedIds.has(battery.battery_id),
+        !reservedIds.has(normalizeBatteryId(battery.battery_id)) &&
+        !rentedIds.has(normalizeBatteryId(battery.battery_id)),
     )
     .sort(
       (a, b) =>

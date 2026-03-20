@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 import { getDb } from "@/lib/server/firebase-admin";
+import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { getActiveStationCode } from "@/lib/server/payment/station";
 
 export async function isDuplicateTransaction(transactionId: string) {
@@ -37,7 +38,7 @@ export async function createRentalLog({
   return getDb().collection("rentals").add({
     imei,
     stationCode,
-    battery_id: batteryId,
+    battery_id: normalizeBatteryId(batteryId) || batteryId,
     slot_id: slotId,
     phoneNumber,
     amount,
@@ -71,18 +72,6 @@ export async function markRentalReturnedAfterFailedUnlock(
   });
 }
 
-const FIRESTORE_IN_QUERY_LIMIT = 10;
-
-function chunkValues<T>(values: T[], size: number) {
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < values.length; index += size) {
-    chunks.push(values.slice(index, index + size));
-  }
-
-  return chunks;
-}
-
 /**
  * Get battery IDs from the provided candidate list that currently have any
  * active rental (status="rented"), regardless of which station created it.
@@ -92,30 +81,24 @@ function chunkValues<T>(values: T[], size: number) {
 export async function getActiveRentedBatteryIds(
   batteryIds: string[],
 ): Promise<Set<string>> {
-  const uniqueBatteryIds = Array.from(
-    new Set(batteryIds.filter((batteryId) => !!batteryId)),
-  );
+  const uniqueBatteryIds = Array.from(new Set(batteryIds.map(normalizeBatteryId).filter(Boolean)));
 
   if (uniqueBatteryIds.length === 0) {
     return new Set<string>();
   }
 
   const activeIds = new Set<string>();
+  const candidateIds = new Set(uniqueBatteryIds);
+  const snap = await getDb()
+    .collection("rentals")
+    .where("status", "==", "rented")
+    .get();
 
-  for (const batteryIdChunk of chunkValues(
-    uniqueBatteryIds,
-    FIRESTORE_IN_QUERY_LIMIT,
-  )) {
-    const snap = await getDb()
-      .collection("rentals")
-      .where("battery_id", "in", batteryIdChunk)
-      .get();
-
-    for (const doc of snap.docs) {
-      const data = doc.data();
-      if (data.status === "rented" && data.battery_id) {
-        activeIds.add(data.battery_id);
-      }
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    const normalizedBatteryId = normalizeBatteryId(data.battery_id);
+    if (normalizedBatteryId && candidateIds.has(normalizedBatteryId)) {
+      activeIds.add(normalizedBatteryId);
     }
   }
 
