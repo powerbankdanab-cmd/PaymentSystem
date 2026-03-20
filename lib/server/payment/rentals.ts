@@ -23,6 +23,7 @@ export async function createRentalLog({
   transactionId,
   issuerTransactionId,
   referenceId,
+  waafiAudit,
 }: {
   imei: string;
   batteryId: string;
@@ -32,6 +33,7 @@ export async function createRentalLog({
   transactionId: string | null;
   issuerTransactionId: string | null;
   referenceId: string | null;
+  waafiAudit?: Record<string, unknown>;
 }) {
   const stationCode = await getActiveStationCode();
 
@@ -47,6 +49,7 @@ export async function createRentalLog({
     transactionId,
     issuerTransactionId,
     referenceId,
+    ...waafiAudit,
     timestamp: Timestamp.now(),
   });
 }

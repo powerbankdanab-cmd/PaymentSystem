@@ -70,7 +70,12 @@ export async function requestWaafiPayment({
 }
 
 export function isWaafiApproved(waafiResponse: WaafiResponse) {
-  return waafiResponse.responseCode === "2001" || waafiResponse.responseCode === 2001;
+  const responseCodeApproved =
+    waafiResponse.responseCode === "2001" || waafiResponse.responseCode === 2001;
+  const stateApproved =
+    String(waafiResponse.params?.state || "").trim().toUpperCase() === "APPROVED";
+
+  return responseCodeApproved && stateApproved;
 }
 
 export function extractWaafiIds(waafiResponse: WaafiResponse) {
@@ -78,5 +83,23 @@ export function extractWaafiIds(waafiResponse: WaafiResponse) {
     transactionId: waafiResponse.params?.transactionId || null,
     issuerTransactionId: waafiResponse.params?.issuerTransactionId || null,
     referenceId: waafiResponse.params?.referenceId || null,
+  };
+}
+
+export function extractWaafiAudit(waafiResponse: WaafiResponse) {
+  return {
+    waafiResponseCode:
+      waafiResponse.responseCode !== undefined && waafiResponse.responseCode !== null
+        ? String(waafiResponse.responseCode)
+        : null,
+    waafiErrorCode: waafiResponse.errorCode || null,
+    waafiResponseMsg: waafiResponse.responseMsg || null,
+    waafiResponseId: waafiResponse.responseId || null,
+    waafiResponseTimestamp: waafiResponse.timestamp || null,
+    waafiState: waafiResponse.params?.state || null,
+    waafiAccountNo: waafiResponse.params?.accountNo || null,
+    waafiAccountType: waafiResponse.params?.accountType || null,
+    waafiMerchantCharges: waafiResponse.params?.merchantCharges || null,
+    waafiTxAmount: waafiResponse.params?.txAmount || null,
   };
 }

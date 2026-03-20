@@ -25,6 +25,7 @@ import { getActiveStationCode, getStationImei } from "@/lib/server/payment/stati
 import { notifyPaidButNotEjected } from "@/lib/server/payment/telegram";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
 import {
+  extractWaafiAudit,
   extractWaafiIds,
   isWaafiApproved,
   requestWaafiPayment,
@@ -144,6 +145,7 @@ export async function processPayment(
 
     const { transactionId, issuerTransactionId, referenceId } =
       extractWaafiIds(waafiResponse);
+    const waafiAudit = extractWaafiAudit(waafiResponse);
 
     if (transactionId) {
       const duplicate = await isDuplicateTransaction(transactionId);
@@ -165,6 +167,7 @@ export async function processPayment(
       transactionId,
       issuerTransactionId,
       referenceId,
+      waafiAudit,
     });
 
     // Rental is now in Firestore — release the short-lived reservation.

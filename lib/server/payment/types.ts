@@ -8,13 +8,22 @@ export type Battery = {
 };
 
 export type WaafiParams = {
+  accountNo?: string;
+  accountType?: string;
+  state?: string;
+  merchantCharges?: string;
   transactionId?: string;
   issuerTransactionId?: string;
   referenceId?: string;
+  txAmount?: string;
 };
 
 export type WaafiResponse = {
+  schemaVersion?: string;
+  timestamp?: string;
+  responseId?: string;
   responseCode?: string | number;
+  errorCode?: string;
   responseMsg?: string;
   params?: WaafiParams;
 };
