@@ -48,9 +48,10 @@ export async function createRentalLog({
     stationCode,
     battery_id: normalizeBatteryId(batteryId) || batteryId,
     slot_id: slotId,
+    // Write-once customer phone captured from the approved payment request.
     requestedPhoneNumber: requestedPhoneNumber || phoneNumber,
     phoneNumber,
-    phoneAuthority: phoneAuthority || "user_input_fallback",
+    phoneAuthority: phoneAuthority || "requested_phone_only",
     amount,
     status: "rented",
     unlockStatus: "pending",

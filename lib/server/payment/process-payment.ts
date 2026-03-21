@@ -146,15 +146,21 @@ export async function processPayment(
     const { transactionId, issuerTransactionId, referenceId } =
       extractWaafiIds(waafiResponse);
     const waafiAudit = extractWaafiAudit(waafiResponse);
-    const waafiReturnedAccountNo =
-      typeof waafiAudit.waafiAccountNo === "string" &&
-      waafiAudit.waafiAccountNo.trim().length > 0
-        ? waafiAudit.waafiAccountNo.trim()
+    const waafiConfirmedPhoneNumber =
+      typeof waafiAudit.waafiConfirmedPhoneNumber === "string" &&
+      waafiAudit.waafiConfirmedPhoneNumber.trim().length > 0
+        ? waafiAudit.waafiConfirmedPhoneNumber.trim()
         : null;
-    const canonicalPhoneNumber = waafiReturnedAccountNo || phoneNumber;
-    const phoneAuthority = waafiReturnedAccountNo
-      ? "waafi_api_account"
-      : "user_input_fallback";
+    // Keep the approved requested phone immutable for operations/calling.
+    // Waafi account data stays in dedicated audit fields because Purchase API
+    // may return a masked account string that is not safe to treat as the
+    // main customer phone number.
+    const canonicalPhoneNumber = phoneNumber;
+    const phoneAuthority = waafiConfirmedPhoneNumber
+      ? waafiConfirmedPhoneNumber === phoneNumber
+        ? "waafi_confirmed_full_match"
+        : "requested_phone_waafi_mismatch"
+      : "requested_phone_only";
 
     if (transactionId) {
       const duplicate = await isDuplicateTransaction(transactionId);
