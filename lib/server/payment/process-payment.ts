@@ -146,14 +146,14 @@ export async function processPayment(
     const { transactionId, issuerTransactionId, referenceId } =
       extractWaafiIds(waafiResponse);
     const waafiAudit = extractWaafiAudit(waafiResponse);
-    const waafiConfirmedPhoneNumber =
-      typeof waafiAudit.waafiConfirmedPhoneNumber === "string" &&
-      waafiAudit.waafiConfirmedPhoneNumber.trim().length > 0
-        ? waafiAudit.waafiConfirmedPhoneNumber.trim()
+    const waafiReturnedAccountNo =
+      typeof waafiAudit.waafiAccountNo === "string" &&
+      waafiAudit.waafiAccountNo.trim().length > 0
+        ? waafiAudit.waafiAccountNo.trim()
         : null;
-    const canonicalPhoneNumber = waafiConfirmedPhoneNumber || phoneNumber;
-    const phoneAuthority = waafiConfirmedPhoneNumber
-      ? "waafi_confirmed"
+    const canonicalPhoneNumber = waafiReturnedAccountNo || phoneNumber;
+    const phoneAuthority = waafiReturnedAccountNo
+      ? "waafi_api_account"
       : "user_input_fallback";
 
     if (transactionId) {
