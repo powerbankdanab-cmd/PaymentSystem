@@ -4,6 +4,7 @@ import {
   releasePhonePaymentLock,
   reserveBattery,
 } from "@/lib/server/payment/battery-lock";
+import { BatteryStateConflictError } from "@/lib/server/payment/battery-state";
 import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { HttpError } from "@/lib/server/payment/errors";
 import {
@@ -173,19 +174,50 @@ export async function processPayment(
       }
     }
 
-    const rentalRef = await createRentalLog({
-      imei,
-      batteryId: battery.battery_id,
-      slotId: battery.slot_id,
-      phoneNumber: canonicalPhoneNumber,
-      requestedPhoneNumber: phoneNumber,
-      amount,
-      transactionId,
-      issuerTransactionId,
-      referenceId,
-      phoneAuthority,
-      waafiAudit,
-    });
+    let rentalRef;
+    try {
+      rentalRef = await createRentalLog({
+        imei,
+        batteryId: battery.battery_id,
+        slotId: battery.slot_id,
+        phoneNumber: canonicalPhoneNumber,
+        requestedPhoneNumber: phoneNumber,
+        amount,
+        transactionId,
+        issuerTransactionId,
+        referenceId,
+        phoneAuthority,
+        waafiAudit,
+      });
+    } catch (error) {
+      if (error instanceof BatteryStateConflictError) {
+        await notifyPaidButNotEjected({
+          phoneNumber,
+          amount,
+          imei,
+          stationCode,
+          batteryId: battery.battery_id,
+          slotId: battery.slot_id,
+          transactionId,
+          issuerTransactionId,
+          referenceId,
+          unlockAttempts: 0,
+          reason: `Payment approved but battery already linked to active rental ${error.activeRentalId || "unknown"}`,
+        });
+
+        throw new HttpError(
+          409,
+          "Payment was approved, but this battery was already linked to another active rental. Please contact support.",
+          {
+            batteryId: error.batteryId,
+            activeRentalId: error.activeRentalId,
+            transactionId,
+          },
+        );
+      }
+
+      throw error;
+    }
 
     // Rental is now in Firestore — release the short-lived reservation.
     // The active rental record itself now protects this battery from being
@@ -281,7 +313,11 @@ export async function processPayment(
             currentBattery.battery_id,
             failureNote,
           );
-          await markRentalReturnedAfterFailedUnlock(rentalRef.id, failureNote);
+          await markRentalReturnedAfterFailedUnlock(
+            rentalRef.id,
+            currentBattery.battery_id,
+            failureNote,
+          );
         } catch (recoveryError) {
           console.error(
             "Failed to mark problem slot or close failed unlock rental:",

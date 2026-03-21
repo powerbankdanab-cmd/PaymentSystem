@@ -2,6 +2,12 @@ import { Timestamp } from "firebase-admin/firestore";
 
 import { getDb } from "@/lib/server/firebase-admin";
 import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
+import {
+  BATTERY_STATE_COLLECTION,
+  BatteryStateConflictError,
+  clearBatteryStateForRental,
+  getClaimedBatteryIds,
+} from "@/lib/server/payment/battery-state";
 import { getActiveStationCode } from "@/lib/server/payment/station";
 
 export const RENTALS_COLLECTION = "rentalsTrans";
@@ -41,26 +47,81 @@ export async function createRentalLog({
   phoneAuthority?: string;
   waafiAudit?: Record<string, unknown>;
 }) {
+  const db = getDb();
   const stationCode = await getActiveStationCode();
+  const now = Timestamp.now();
+  const normalizedBatteryId = normalizeBatteryId(batteryId) || batteryId;
+  const resolvedRequestedPhoneNumber = requestedPhoneNumber || phoneNumber;
+  const rentalRef = db.collection(RENTALS_COLLECTION).doc();
+  const batteryStateRef = db
+    .collection(BATTERY_STATE_COLLECTION)
+    .doc(normalizedBatteryId);
 
-  return getDb().collection(RENTALS_COLLECTION).add({
-    imei,
-    stationCode,
-    battery_id: normalizeBatteryId(batteryId) || batteryId,
-    slot_id: slotId,
-    // Write-once customer phone captured from the approved payment request.
-    requestedPhoneNumber: requestedPhoneNumber || phoneNumber,
-    phoneNumber,
-    phoneAuthority: phoneAuthority || "requested_phone_only",
-    amount,
-    status: "rented",
-    unlockStatus: "pending",
-    transactionId,
-    issuerTransactionId,
-    referenceId,
-    ...waafiAudit,
-    timestamp: Timestamp.now(),
+  await db.runTransaction(async (tx) => {
+    const batteryStateSnap = await tx.get(batteryStateRef);
+    const batteryState = batteryStateSnap.data() || {};
+
+    if (
+      String(batteryState.status || "").toLowerCase() === "rented" &&
+      String(batteryState.activeRentalId || "").trim().length > 0
+    ) {
+      throw new BatteryStateConflictError(
+        normalizedBatteryId,
+        String(batteryState.activeRentalId || ""),
+      );
+    }
+
+    tx.set(rentalRef, {
+      imei,
+      stationCode,
+      battery_id: normalizedBatteryId,
+      slot_id: slotId,
+      // Write-once customer phone captured from the approved payment request.
+      requestedPhoneNumber: resolvedRequestedPhoneNumber,
+      phoneNumber,
+      phoneAuthority: phoneAuthority || "requested_phone_only",
+      amount,
+      status: "rented",
+      unlockStatus: "pending",
+      transactionId,
+      issuerTransactionId,
+      referenceId,
+      ...waafiAudit,
+      timestamp: now,
+    });
+
+    tx.set(
+      batteryStateRef,
+      {
+        battery_id: normalizedBatteryId,
+        imei,
+        stationCode,
+        slot_id: slotId,
+        activeRentalId: rentalRef.id,
+        phoneNumber,
+        requestedPhoneNumber: resolvedRequestedPhoneNumber,
+        phoneAuthority: phoneAuthority || "requested_phone_only",
+        transactionId,
+        issuerTransactionId,
+        referenceId,
+        amount,
+        status: "rented",
+        claimedAt: batteryState.claimedAt || now,
+        updatedAt: now,
+        waafiAccountNo:
+          typeof waafiAudit?.waafiAccountNo === "string"
+            ? waafiAudit.waafiAccountNo
+            : null,
+        waafiConfirmedPhoneNumber:
+          typeof waafiAudit?.waafiConfirmedPhoneNumber === "string"
+            ? waafiAudit.waafiConfirmedPhoneNumber
+            : null,
+      },
+      { merge: true },
+    );
   });
+
+  return rentalRef;
 }
 
 export async function updateRentalUnlockStatus(
@@ -75,11 +136,18 @@ export async function updateRentalUnlockStatus(
 
 export async function markRentalReturnedAfterFailedUnlock(
   rentalId: string,
+  batteryId: string,
   note: string,
 ) {
-  return getDb().collection(RENTALS_COLLECTION).doc(rentalId).update({
+  await getDb().collection(RENTALS_COLLECTION).doc(rentalId).update({
     status: "returned",
     returnedAt: Timestamp.now(),
+    note,
+  });
+
+  await clearBatteryStateForRental({
+    batteryId,
+    rentalId,
     note,
   });
 }
@@ -101,7 +169,7 @@ export async function getActiveRentedBatteryIds(
     return new Set<string>();
   }
 
-  const activeIds = new Set<string>();
+  const activeIds = await getClaimedBatteryIds(uniqueBatteryIds);
   const candidateIds = new Set(uniqueBatteryIds);
   const snapshot = await getDb()
     .collection(RENTALS_COLLECTION)
@@ -111,7 +179,11 @@ export async function getActiveRentedBatteryIds(
   for (const doc of snapshot.docs) {
     const data = doc.data();
     const normalizedBatteryId = normalizeBatteryId(data.battery_id);
-    if (normalizedBatteryId && candidateIds.has(normalizedBatteryId)) {
+    if (
+      normalizedBatteryId &&
+      candidateIds.has(normalizedBatteryId) &&
+      !activeIds.has(normalizedBatteryId)
+    ) {
       activeIds.add(normalizedBatteryId);
     }
   }
