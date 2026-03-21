@@ -21,20 +21,24 @@ export async function createRentalLog({
   batteryId,
   slotId,
   phoneNumber,
+  requestedPhoneNumber,
   amount,
   transactionId,
   issuerTransactionId,
   referenceId,
+  phoneAuthority,
   waafiAudit,
 }: {
   imei: string;
   batteryId: string;
   slotId: string;
   phoneNumber: string;
+  requestedPhoneNumber?: string;
   amount: number;
   transactionId: string | null;
   issuerTransactionId: string | null;
   referenceId: string | null;
+  phoneAuthority?: string;
   waafiAudit?: Record<string, unknown>;
 }) {
   const stationCode = await getActiveStationCode();
@@ -44,7 +48,9 @@ export async function createRentalLog({
     stationCode,
     battery_id: normalizeBatteryId(batteryId) || batteryId,
     slot_id: slotId,
+    requestedPhoneNumber: requestedPhoneNumber || phoneNumber,
     phoneNumber,
+    phoneAuthority: phoneAuthority || "user_input_fallback",
     amount,
     status: "rented",
     unlockStatus: "pending",
@@ -121,8 +127,27 @@ export async function hasActiveRentalForPhone(
 ): Promise<boolean> {
   const snapshot = await getDb()
     .collection(RENTALS_COLLECTION)
-    .where("phoneNumber", "==", phoneNumber)
+    .where("status", "==", "rented")
     .get();
 
-  return snapshot.docs.some((doc) => doc.data().status === "rented");
+  const normalizedPhone = String(phoneNumber || "").replace(/\D/g, "");
+
+  return snapshot.docs.some((doc) => {
+    const data = doc.data();
+    const requestedPhone = String(data.requestedPhoneNumber || "").replace(
+      /\D/g,
+      "",
+    );
+    const waafiPhone = String(data.waafiConfirmedPhoneNumber || "").replace(
+      /\D/g,
+      "",
+    );
+    const storedPhone = String(data.phoneNumber || "").replace(/\D/g, "");
+
+    return (
+      requestedPhone === normalizedPhone ||
+      waafiPhone === normalizedPhone ||
+      storedPhone === normalizedPhone
+    );
+  });
 }

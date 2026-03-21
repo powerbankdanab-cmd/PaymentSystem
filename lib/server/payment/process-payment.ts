@@ -146,6 +146,15 @@ export async function processPayment(
     const { transactionId, issuerTransactionId, referenceId } =
       extractWaafiIds(waafiResponse);
     const waafiAudit = extractWaafiAudit(waafiResponse);
+    const waafiConfirmedPhoneNumber =
+      typeof waafiAudit.waafiConfirmedPhoneNumber === "string" &&
+      waafiAudit.waafiConfirmedPhoneNumber.trim().length > 0
+        ? waafiAudit.waafiConfirmedPhoneNumber.trim()
+        : null;
+    const canonicalPhoneNumber = waafiConfirmedPhoneNumber || phoneNumber;
+    const phoneAuthority = waafiConfirmedPhoneNumber
+      ? "waafi_confirmed"
+      : "user_input_fallback";
 
     if (transactionId) {
       const duplicate = await isDuplicateTransaction(transactionId);
@@ -162,11 +171,13 @@ export async function processPayment(
       imei,
       batteryId: battery.battery_id,
       slotId: battery.slot_id,
-      phoneNumber,
+      phoneNumber: canonicalPhoneNumber,
+      requestedPhoneNumber: phoneNumber,
       amount,
       transactionId,
       issuerTransactionId,
       referenceId,
+      phoneAuthority,
       waafiAudit,
     });
 

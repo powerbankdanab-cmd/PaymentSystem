@@ -5,6 +5,16 @@ import { WaafiResponse } from "@/lib/server/payment/types";
 
 const WAAFI_REQUEST_TIMEOUT_MS = 20_000;
 
+function normalizePhoneDigits(value: string) {
+  const digits = value.replace(/\D/g, "");
+
+  if (digits.startsWith("252") && digits.length > 9) {
+    return digits.slice(-9);
+  }
+
+  return digits;
+}
+
 export async function requestWaafiPayment({
   phoneNumber,
   amount,
@@ -87,6 +97,12 @@ export function extractWaafiIds(waafiResponse: WaafiResponse) {
 }
 
 export function extractWaafiAudit(waafiResponse: WaafiResponse) {
+  const rawAccountNo = String(waafiResponse.params?.accountNo || "");
+  const waafiConfirmedPhoneNumber =
+    rawAccountNo && !rawAccountNo.includes("*")
+      ? normalizePhoneDigits(rawAccountNo) || null
+      : null;
+
   return {
     waafiResponseCode:
       waafiResponse.responseCode !== undefined && waafiResponse.responseCode !== null
@@ -98,6 +114,7 @@ export function extractWaafiAudit(waafiResponse: WaafiResponse) {
     waafiResponseTimestamp: waafiResponse.timestamp || null,
     waafiState: waafiResponse.params?.state || null,
     waafiAccountNo: waafiResponse.params?.accountNo || null,
+    waafiConfirmedPhoneNumber,
     waafiAccountType: waafiResponse.params?.accountType || null,
     waafiMerchantCharges: waafiResponse.params?.merchantCharges || null,
     waafiTxAmount: waafiResponse.params?.txAmount || null,
