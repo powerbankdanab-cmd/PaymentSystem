@@ -140,6 +140,47 @@ export async function getAvailableBattery(imei: string) {
   return available[0] || null;
 }
 
+export async function isSpecificBatteryReadyForRental({
+  imei,
+  batteryId,
+  slotId,
+}: {
+  imei: string;
+  batteryId: string;
+  slotId: string;
+}) {
+  const normalizedBatteryId = normalizeBatteryId(batteryId);
+  if (!normalizedBatteryId) {
+    return false;
+  }
+
+  const [batteries, problemSlots, rentedIds] = await Promise.all([
+    queryStationBatteries(imei),
+    getProblemSlotIds(imei),
+    getActiveRentedBatteryIds([normalizedBatteryId]),
+  ]);
+
+  const battery = batteries.find(
+    (entry) =>
+      normalizeBatteryId(entry.battery_id) === normalizedBatteryId &&
+      entry.slot_id === slotId,
+  );
+
+  if (!battery) {
+    return false;
+  }
+
+  return (
+    battery.lock_status === "1" &&
+    Number.parseInt(battery.battery_capacity, 10) >=
+      MIN_AVAILABLE_BATTERY_PERCENT &&
+    battery.battery_abnormal === "0" &&
+    battery.cable_abnormal === "0" &&
+    !problemSlots.has(battery.slot_id) &&
+    !rentedIds.has(normalizedBatteryId)
+  );
+}
+
 export async function releaseBattery({
   imei,
   batteryId,

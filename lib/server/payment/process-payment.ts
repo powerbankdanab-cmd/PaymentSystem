@@ -9,6 +9,7 @@ import { normalizeBatteryId } from "@/lib/server/payment/battery-id";
 import { HttpError } from "@/lib/server/payment/errors";
 import {
   getAvailableBattery,
+  isSpecificBatteryReadyForRental,
   markProblemSlot,
   MIN_AVAILABLE_BATTERY_PERCENT,
   queryStationBatteries,
@@ -115,6 +116,20 @@ export async function processPayment(
         phoneNumber,
       );
       if (reserved) {
+        const stillReady = await isSpecificBatteryReadyForRental({
+          imei,
+          batteryId: candidate.battery_id,
+          slotId: candidate.slot_id,
+        });
+
+        if (!stillReady) {
+          console.warn(
+            `Reserve attempt ${attempt + 1}: battery ${candidate.battery_id} is no longer ready before payment, trying next`,
+          );
+          await releaseReservation(imei, candidate.battery_id);
+          continue;
+        }
+
         battery = candidate;
         reservedBatteryId = candidate.battery_id;
         break;
