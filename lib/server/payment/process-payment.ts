@@ -24,6 +24,7 @@ import {
   updateRentalUnlockStatus,
 } from "@/lib/server/payment/rentals";
 import { getActiveStationCode, getStationImei } from "@/lib/server/payment/station";
+import { getStationConfigByCode } from "@/lib/server/station-config";
 import { notifyPaidButNotEjected } from "@/lib/server/payment/telegram";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
 import {
@@ -70,6 +71,7 @@ export async function processPayment(
 ): Promise<PaymentPayload> {
   const phoneNumber = input.phoneNumber.replace(/\D/g, "");
   const { amount } = input;
+  const requestedStationCode = String(input.stationCode || "").replace(/\D/g, "");
 
   const blacklisted = await isPhoneBlacklisted(phoneNumber);
   if (blacklisted) {
@@ -79,8 +81,16 @@ export async function processPayment(
     );
   }
 
-  const imei = await getStationImei();
-  const stationCode = await getActiveStationCode();
+  const requestedStationConfig = requestedStationCode
+    ? getStationConfigByCode(requestedStationCode)
+    : null;
+  if (requestedStationCode && !requestedStationConfig) {
+    throw new HttpError(400, "Invalid station code");
+  }
+
+  const imei = requestedStationConfig?.imei || (await getStationImei());
+  const stationCode =
+    requestedStationConfig?.code || (await getActiveStationCode());
   const phoneLockAcquired = await acquirePhonePaymentLock(phoneNumber);
   if (!phoneLockAcquired) {
     throw new HttpError(
@@ -193,6 +203,7 @@ export async function processPayment(
     try {
       rentalRef = await createRentalLog({
         imei,
+        stationCode,
         batteryId: battery.battery_id,
         slotId: battery.slot_id,
         phoneNumber: canonicalPhoneNumber,

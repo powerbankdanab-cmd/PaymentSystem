@@ -31,6 +31,7 @@ export type WaafiResponse = {
 export type PaymentInput = {
   phoneNumber: string;
   amount: number;
+  stationCode?: string;
 };
 
 export type PaymentSuccessPayload = {

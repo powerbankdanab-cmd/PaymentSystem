@@ -8,7 +8,6 @@ import {
   clearBatteryStateForRental,
   getClaimedBatteryIds,
 } from "@/lib/server/payment/battery-state";
-import { getActiveStationCode } from "@/lib/server/payment/station";
 
 export const RENTALS_COLLECTION = "rentalsTrans";
 
@@ -24,6 +23,7 @@ export async function isDuplicateTransaction(transactionId: string) {
 
 export async function createRentalLog({
   imei,
+  stationCode,
   batteryId,
   slotId,
   phoneNumber,
@@ -36,6 +36,7 @@ export async function createRentalLog({
   waafiAudit,
 }: {
   imei: string;
+  stationCode: string;
   batteryId: string;
   slotId: string;
   phoneNumber: string;
@@ -48,7 +49,6 @@ export async function createRentalLog({
   waafiAudit?: Record<string, unknown>;
 }) {
   const db = getDb();
-  const stationCode = await getActiveStationCode();
   const now = Timestamp.now();
   const normalizedBatteryId = normalizeBatteryId(batteryId) || batteryId;
   const resolvedRequestedPhoneNumber = requestedPhoneNumber || phoneNumber;

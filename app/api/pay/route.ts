@@ -10,6 +10,7 @@ type PaymentRequestBody = {
   phoneNumber?: string;
 
   amount?: number;
+  stationCode?: string;
 };
 
 function parseAndValidateBody(body: PaymentRequestBody) {
@@ -19,12 +20,20 @@ function parseAndValidateBody(body: PaymentRequestBody) {
       : "";
 
   const amount = Number(body.amount);
+  const stationCode =
+    typeof body.stationCode === "string"
+      ? body.stationCode.replace(/\D/g, "")
+      : "";
 
   if (!phoneNumber || Number.isNaN(amount) || amount <= 0) {
     return { error: "Missing phoneNumber or valid amount" } as const;
   }
 
-  return { phoneNumber, amount } as const;
+  return {
+    phoneNumber,
+    amount,
+    ...(stationCode ? { stationCode } : {}),
+  } as const;
 }
 
 export const maxDuration = 300;

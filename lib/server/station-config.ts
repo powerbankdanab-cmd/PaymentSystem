@@ -65,6 +65,10 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
   },
 };
 
+function normalizeStationCode(code: string): string {
+  return String(code || "").replace(/\D/g, "");
+}
+
 export function getStationConfigByDomain(
   hostname: string,
 ): StationConfig | null {
@@ -95,4 +99,38 @@ export function getStationConfigByDomain(
   }
 
   return null;
+}
+
+export function getStationConfigByCode(code: string): StationConfig | null {
+  const normalizedCode = normalizeStationCode(code);
+  if (!normalizedCode) {
+    return null;
+  }
+
+  const envImei = process.env[`STATION_${normalizedCode}_IMEI`];
+  if (envImei) {
+    return {
+      code: normalizedCode,
+      imei: envImei,
+      name: STATION_NAMES[normalizedCode] || `Station ${normalizedCode}`,
+    };
+  }
+
+  return null;
+}
+
+export function getPublicStationConfigs(): StationConfig[] {
+  const seen = new Set<string>();
+  const stations: StationConfig[] = [];
+
+  for (const code of Object.keys(STATION_NAMES)) {
+    const config = getStationConfigByCode(code);
+    if (config && !seen.has(config.code)) {
+      seen.add(config.code);
+      stations.push(config);
+    }
+  }
+
+  stations.sort((a, b) => Number(a.code) - Number(b.code));
+  return stations;
 }
