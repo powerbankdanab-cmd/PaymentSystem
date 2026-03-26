@@ -34,8 +34,8 @@ import {
   requestWaafiPayment,
 } from "@/lib/server/payment/waafi";
 
-const MAX_UNLOCK_ATTEMPTS = 2;
-const UNLOCK_RETRY_DELAY_MS = 1_500;
+const MAX_UNLOCK_ATTEMPTS = 3;
+const UNLOCK_RETRY_DELAY_MS = 2_500;
 
 type BatteryPresence = "present" | "missing" | "unknown";
 

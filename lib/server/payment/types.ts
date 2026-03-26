@@ -5,6 +5,9 @@ export type Battery = {
   battery_capacity: string;
   battery_abnormal: string;
   cable_abnormal: string;
+  battery_status?: string;
+  slot_status?: string;
+  battery_soh?: string;
 };
 
 export type WaafiParams = {

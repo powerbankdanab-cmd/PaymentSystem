@@ -12,6 +12,7 @@ type HeyChargeStationResponse = {
 };
 
 const HEYCHARGE_QUERY_TIMEOUT_MS = 12_000;
+const HEYCHARGE_RELEASE_TIMEOUT_MS = 10_000;
 export const MIN_AVAILABLE_BATTERY_PERCENT = 60;
 
 function buildHeyChargeAuthHeader() {
@@ -109,6 +110,45 @@ export async function markProblemSlot(
   );
 }
 
+function normalizeHeyChargeState(value?: string | null): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isHealthyHeyChargeState(value?: string | null): boolean {
+  const normalized = normalizeHeyChargeState(value);
+
+  if (!normalized) {
+    return true;
+  }
+
+  return [
+    "normal",
+    "online",
+    "available",
+    "ok",
+    "healthy",
+    "1",
+  ].includes(normalized);
+}
+
+function isBatteryRentable(battery: Battery, problemSlots: Set<string>) {
+  const capacity = Number.parseInt(battery.battery_capacity, 10);
+  const hasHealthySlot = isHealthyHeyChargeState(battery.slot_status);
+  const hasHealthyBatteryState = isHealthyHeyChargeState(battery.battery_status);
+
+  return (
+    Boolean(normalizeBatteryId(battery.battery_id)) &&
+    Boolean(battery.slot_id) &&
+    battery.lock_status === "1" &&
+    capacity >= MIN_AVAILABLE_BATTERY_PERCENT &&
+    battery.battery_abnormal === "0" &&
+    battery.cable_abnormal === "0" &&
+    hasHealthySlot &&
+    hasHealthyBatteryState &&
+    !problemSlots.has(battery.slot_id)
+  );
+}
+
 export async function getAvailableBattery(imei: string) {
   const batteries = await queryStationBatteries(imei);
   const batteryIds = batteries.map((battery) => battery.battery_id);
@@ -122,12 +162,7 @@ export async function getAvailableBattery(imei: string) {
   const available = batteries
     .filter(
       (battery) =>
-        battery.lock_status === "1" &&
-        Number.parseInt(battery.battery_capacity, 10) >=
-          MIN_AVAILABLE_BATTERY_PERCENT &&
-        battery.battery_abnormal === "0" &&
-        battery.cable_abnormal === "0" &&
-        !problemSlots.has(battery.slot_id) &&
+        isBatteryRentable(battery, problemSlots) &&
         !reservedIds.has(normalizeBatteryId(battery.battery_id)) &&
         !rentedIds.has(normalizeBatteryId(battery.battery_id)),
     )
@@ -171,12 +206,7 @@ export async function isSpecificBatteryReadyForRental({
   }
 
   return (
-    battery.lock_status === "1" &&
-    Number.parseInt(battery.battery_capacity, 10) >=
-      MIN_AVAILABLE_BATTERY_PERCENT &&
-    battery.battery_abnormal === "0" &&
-    battery.cable_abnormal === "0" &&
-    !problemSlots.has(battery.slot_id) &&
+    isBatteryRentable(battery, problemSlots) &&
     !rentedIds.has(normalizedBatteryId)
   );
 }
@@ -195,6 +225,11 @@ export async function releaseBattery({
   url.searchParams.set("battery_id", batteryId);
   url.searchParams.set("slot_id", slotId);
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, HEYCHARGE_RELEASE_TIMEOUT_MS);
+
   let response: Response;
   try {
     response = await fetch(url.toString(), {
@@ -203,9 +238,16 @@ export async function releaseBattery({
         Authorization: buildHeyChargeAuthHeader(),
       },
       cache: "no-store",
+      signal: controller.signal,
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Battery unlock request timed out");
+    }
+
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 
   const payload = await parseResponseBody(response);
