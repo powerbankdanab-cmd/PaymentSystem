@@ -5,6 +5,12 @@ import { WaafiResponse } from "@/lib/server/payment/types";
 
 const WAAFI_REQUEST_TIMEOUT_MS = 20_000;
 
+type WaafiServiceName =
+  | "API_PURCHASE"
+  | "API_PREAUTHORIZE"
+  | "API_PREAUTHORIZE_COMMIT"
+  | "API_PREAUTHORIZE_CANCEL";
+
 function normalizePhoneDigits(value: string) {
   const digits = value.replace(/\D/g, "");
 
@@ -15,32 +21,24 @@ function normalizePhoneDigits(value: string) {
   return digits;
 }
 
-export async function requestWaafiPayment({
-  phoneNumber,
-  amount,
+async function requestWaafiAction({
+  serviceName,
+  serviceParams,
 }: {
-  phoneNumber: string;
-  amount: number;
+  serviceName: WaafiServiceName;
+  serviceParams: Record<string, unknown>;
 }) {
   const payload = {
     schemaVersion: "1.0",
     requestId: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
     channelName: "WEB",
-    serviceName: "API_PURCHASE",
+    serviceName,
     serviceParams: {
       merchantUid: getRequiredEnv("WAAFI_MERCHANT_UID"),
       apiUserId: getRequiredEnv("WAAFI_API_USER_ID"),
       apiKey: getRequiredEnv("WAAFI_API_KEY"),
-      paymentMethod: "MWALLET_ACCOUNT",
-      payerInfo: { accountNo: phoneNumber },
-      transactionInfo: {
-        referenceId: `ref-${Date.now()}`,
-        invoiceId: `inv-${Date.now()}`,
-        amount: amount.toFixed(2),
-        currency: "USD",
-        description: "Powerbank rental",
-      },
+      ...serviceParams,
     },
   };
 
@@ -77,6 +75,62 @@ export async function requestWaafiPayment({
   }
 
   return (responsePayload || {}) as WaafiResponse;
+}
+
+export async function requestWaafiPreauthorization({
+  phoneNumber,
+  amount,
+  referenceId,
+}: {
+  phoneNumber: string;
+  amount: number;
+  referenceId: string;
+}) {
+  return requestWaafiAction({
+    serviceName: "API_PREAUTHORIZE",
+    serviceParams: {
+      paymentMethod: "MWALLET_ACCOUNT",
+      payerInfo: { accountNo: phoneNumber },
+      transactionInfo: {
+        referenceId,
+        amount: amount.toFixed(2),
+        currency: "USD",
+        description: "Powerbank rental hold",
+      },
+    },
+  });
+}
+
+export async function commitWaafiPreauthorization({
+  transactionId,
+  description,
+}: {
+  transactionId: string;
+  description?: string;
+}) {
+  return requestWaafiAction({
+    serviceName: "API_PREAUTHORIZE_COMMIT",
+    serviceParams: {
+      transactionId,
+      description: description || "Powerbank rental committed",
+    },
+  });
+}
+
+export async function cancelWaafiPreauthorization({
+  transactionId,
+  description,
+}: {
+  transactionId: string;
+  description?: string;
+}) {
+  return requestWaafiAction({
+    serviceName: "API_PREAUTHORIZE_CANCEL",
+    serviceParams: {
+      transactionId,
+      description: description || "Powerbank rental cancelled",
+    },
+  });
 }
 
 export function isWaafiApproved(waafiResponse: WaafiResponse) {
@@ -119,4 +173,24 @@ export function extractWaafiAudit(waafiResponse: WaafiResponse) {
     waafiMerchantCharges: waafiResponse.params?.merchantCharges || null,
     waafiTxAmount: waafiResponse.params?.txAmount || null,
   };
+}
+
+export function mergeWaafiAuditRecords(
+  ...audits: Array<Record<string, unknown> | undefined>
+) {
+  const merged: Record<string, unknown> = {};
+
+  for (const audit of audits) {
+    if (!audit) {
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(audit)) {
+      if (value !== undefined && value !== null && value !== "") {
+        merged[key] = value;
+      }
+    }
+  }
+
+  return merged;
 }

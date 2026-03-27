@@ -29,8 +29,9 @@ type ApiResponse = {
 
 const PROCESSING_STEPS: Array<{ key: ProcessingStep; label: string }> = [
   { key: "verify", label: "Hubinta" },
-  { key: "charge", label: "Lacagta" },
+  { key: "hold", label: "Hold" },
   { key: "unlock", label: "Battery" },
+  { key: "commit", label: "Commit" },
 ];
 
 async function safeReadJson(response: Response): Promise<ApiResponse> {
@@ -148,9 +149,9 @@ export function PaymentProcessingPage() {
         await wait(2000);
         if (cancelled) return;
 
-        // Step 2: Charge — stays until API responds
-        setProcessingStep("charge");
-        setStatusMessage("Diraya lacagta...");
+        // Step 2: Hold — request stays in-flight while backend runs
+        setProcessingStep("hold");
+        setStatusMessage("Abuuraya hold-ka lacagta...");
 
         clearPaymentAbort();
         const controller = new AbortController();
@@ -177,18 +178,24 @@ export function PaymentProcessingPage() {
 
         if (cancelled) return;
 
-        // Step 3: Unlock — only after API responds
+        // Show unlock/commit completion states after the backend finishes.
         setProcessingStep("unlock");
         setStatusMessage("Furaya battery-ga...");
 
-        // Small delay so user sees the unlock step before result
-        await wait(1500);
+        await wait(900);
+        if (cancelled) return;
+
+        setProcessingStep("commit");
+        setStatusMessage("Xaqiijinaya lacagta ugu dambeysa...");
+
+        await wait(900);
         if (cancelled) return;
 
         if (paymentRes.ok && paymentData.success) {
           setStatus("success");
           setWaafiMessage(
-            paymentData.waafiMessage || "Lacag bixinta waa guulaysatay!",
+            paymentData.waafiMessage ||
+              "Battery-gu wuu soo baxay, lacagtiina waa la xaqiijiyay!",
           );
           setBatteryInfo(
             paymentData.battery_id && paymentData.slot_id
@@ -276,6 +283,11 @@ export function PaymentProcessingPage() {
             <p className="mt-2 text-xl text-slate-500">
               {method} • {formatAmount(amount)}
             </p>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Web-kan hadda wuxuu adeegsanayaa Waafi preauthorization flow:
+              marka hore lacagta waa la hold gareeyaa, kadib battery-ga ayaa la
+              furaa, ugu dambeyntiina payment-ka ayaa la commit gareeyaa.
+            </p>
 
             <div className="mt-8 flex items-start justify-between gap-2">
               {PROCESSING_STEPS.map((step, index) => {
@@ -354,6 +366,11 @@ export function PaymentProcessingPage() {
                 Slot <strong>{batteryInfo.slotId}</strong>.
               </p>
             )}
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Output-ka cusub waa sidan: hold first, eject second, commit last.
+              Haddii eject-ku fashilmo, hold-ka waa la cancel gareeyaa halkii user-ka
+              si toos ah looga jari lahaa lacagta.
+            </p>
 
             <div className="mt-6">
               <Link

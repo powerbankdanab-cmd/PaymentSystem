@@ -67,6 +67,37 @@ export function mapBackendErrorMessage(message: string, waafiMsg?: string) {
     return "Lacag bixinta ma dhicin, fadlan hubi numberkaaga iyo haraagaaga";
   }
 
+  if (message.includes("Payment hold not approved")) {
+    if (waafiMsg) {
+      return waafiMsg;
+    }
+    return "Waafi ma ogolaan hold-ka lacagta. Fadlan hubi numberkaaga iyo haraagaaga.";
+  }
+
+  if (message.includes("Payment hold was approved")) {
+    return "Waafi hold-ku wuu dhacay, laakiin transaction ID lama helin. Fadlan mar kale isku day.";
+  }
+
+  if (message.includes("Battery could not be released. Payment hold was cancelled.")) {
+    return "Battery-gu ma soo bixin. Hold-kii lacagta waa la cancel gareeyay, lacag kama bixin doontid.";
+  }
+
+  if (
+    message.includes(
+      "Battery could not be released and payment hold cancellation could not be confirmed.",
+    )
+  ) {
+    return "Battery-gu ma soo bixin, laakiin cancel-ka hold-ka lama xaqiijin. Fadlan la xiriir support-ka Danab.";
+  }
+
+  if (
+    message.includes(
+      "Battery was released, but payment confirmation could not be completed.",
+    )
+  ) {
+    return "Battery-gu wuu soo baxay, laakiin commit-ka lacagta lama xaqiijin. Fadlan la xiriir support-ka Danab.";
+  }
+
   if (lowerMessage.includes("timed out") || lowerMessage.includes("timeout")) {
     return "Waqtigii codsiga wuu dhamaaday. Fadlan mar kale isku day.";
   }

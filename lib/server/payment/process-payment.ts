@@ -20,7 +20,6 @@ import {
   createRentalLog,
   hasActiveRentalForPhone,
   isDuplicateTransaction,
-  markRentalReturnedAfterFailedUnlock,
   updateRentalUnlockStatus,
 } from "@/lib/server/payment/rentals";
 import { getActiveStationCode, getStationImei } from "@/lib/server/payment/station";
@@ -28,10 +27,13 @@ import { getStationConfigByCode } from "@/lib/server/station-config";
 import { notifyPaidButNotEjected } from "@/lib/server/payment/telegram";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
 import {
+  cancelWaafiPreauthorization,
+  commitWaafiPreauthorization,
   extractWaafiAudit,
   extractWaafiIds,
   isWaafiApproved,
-  requestWaafiPayment,
+  mergeWaafiAuditRecords,
+  requestWaafiPreauthorization,
 } from "@/lib/server/payment/waafi";
 
 const MAX_UNLOCK_ATTEMPTS = 3;
@@ -156,26 +158,28 @@ export async function processPayment(
       );
     }
 
-    // ── Payment ───────────────────────────────────────────────────
-    const waafiResponse = await requestWaafiPayment({
+    // ── Waafi hold first, then eject, then commit/cancel ─────────
+    const preauthReferenceId = `ref-${Date.now()}`;
+    const preauthResponse = await requestWaafiPreauthorization({
       phoneNumber,
       amount,
+      referenceId: preauthReferenceId,
     });
 
-    if (!isWaafiApproved(waafiResponse)) {
-      throw new HttpError(400, "Payment not approved", {
-        waafiResponse,
-        waafiMsg: waafiResponse.responseMsg || "",
+    if (!isWaafiApproved(preauthResponse)) {
+      throw new HttpError(400, "Payment hold not approved", {
+        waafiResponse: preauthResponse,
+        waafiMsg: preauthResponse.responseMsg || "",
       });
     }
 
     const { transactionId, issuerTransactionId, referenceId } =
-      extractWaafiIds(waafiResponse);
-    const waafiAudit = extractWaafiAudit(waafiResponse);
+      extractWaafiIds(preauthResponse);
+    const preauthAudit = extractWaafiAudit(preauthResponse);
     const waafiConfirmedPhoneNumber =
-      typeof waafiAudit.waafiConfirmedPhoneNumber === "string" &&
-      waafiAudit.waafiConfirmedPhoneNumber.trim().length > 0
-        ? waafiAudit.waafiConfirmedPhoneNumber.trim()
+      typeof preauthAudit.waafiConfirmedPhoneNumber === "string" &&
+      preauthAudit.waafiConfirmedPhoneNumber.trim().length > 0
+        ? preauthAudit.waafiConfirmedPhoneNumber.trim()
         : null;
     // Keep the approved requested phone immutable for operations/calling.
     // Waafi account data stays in dedicated audit fields because Purchase API
@@ -188,9 +192,28 @@ export async function processPayment(
         : "requested_phone_waafi_mismatch"
       : "requested_phone_only";
 
+    if (!transactionId) {
+      throw new HttpError(
+        502,
+        "Payment hold was approved, but Waafi did not return a transaction ID. Please try again.",
+      );
+    }
+
     if (transactionId) {
       const duplicate = await isDuplicateTransaction(transactionId);
       if (duplicate) {
+        try {
+          await cancelWaafiPreauthorization({
+            transactionId,
+            description: "Duplicate preauthorization hold cancelled",
+          });
+        } catch (error) {
+          console.warn(
+            "Failed to cancel duplicate preauthorization hold:",
+            error instanceof Error ? error.message : error,
+          );
+        }
+
         return {
           success: true,
           message: "Payment already processed",
@@ -198,58 +221,6 @@ export async function processPayment(
         };
       }
     }
-
-    let rentalRef;
-    try {
-      rentalRef = await createRentalLog({
-        imei,
-        stationCode,
-        batteryId: battery.battery_id,
-        slotId: battery.slot_id,
-        phoneNumber: canonicalPhoneNumber,
-        requestedPhoneNumber: phoneNumber,
-        amount,
-        transactionId,
-        issuerTransactionId,
-        referenceId,
-        phoneAuthority,
-        waafiAudit,
-      });
-    } catch (error) {
-      if (error instanceof BatteryStateConflictError) {
-        await notifyPaidButNotEjected({
-          phoneNumber,
-          amount,
-          imei,
-          stationCode,
-          batteryId: battery.battery_id,
-          slotId: battery.slot_id,
-          transactionId,
-          issuerTransactionId,
-          referenceId,
-          unlockAttempts: 0,
-          reason: `Payment approved but battery already linked to active rental ${error.activeRentalId || "unknown"}`,
-        });
-
-        throw new HttpError(
-          409,
-          "Payment was approved, but this battery was already linked to another active rental. Please contact support.",
-          {
-            batteryId: error.batteryId,
-            activeRentalId: error.activeRentalId,
-            transactionId,
-          },
-        );
-      }
-
-      throw error;
-    }
-
-    // Rental is now in Firestore — release the short-lived reservation.
-    // The active rental record itself now protects this battery from being
-    // assigned to another user (via getActiveRentedBatteryIds).
-    await releaseReservation(imei, battery.battery_id);
-    reservedBatteryId = null;
 
     let unlock: unknown = null;
     let unlockAttempts = 0;
@@ -312,48 +283,85 @@ export async function processPayment(
         console.error(
           `Battery ${currentBattery.battery_id} not in slot ${currentBattery.slot_id} after unlock error — likely ejected successfully`,
         );
-        await updateRentalUnlockStatus(rentalRef.id, "unlocked");
-
-        return {
-          success: true,
-          battery_id: currentBattery.battery_id,
-          slot_id: currentBattery.slot_id,
-          unlock: null,
-          waafiMessage: waafiResponse.responseMsg || "Payment successful",
-          waafiResponse,
-        };
+        lastUnlockError = null;
+        unlock = null;
       }
 
-      await updateRentalUnlockStatus(rentalRef.id, "unlock_failed");
+      if (lastUnlockError) {
+        const failureNote =
+          lastKnownPresence === "present"
+            ? `Unlock failed after ${unlockAttempts} attempts, battery still present`
+            : `Unlock failed after ${unlockAttempts} attempts, slot status could not be rechecked`;
 
-      const failureNote =
-        lastKnownPresence === "present"
-          ? `Unlock failed after ${unlockAttempts} attempts, battery still present`
-          : `Unlock failed after ${unlockAttempts} attempts, slot status could not be rechecked`;
+        if (lastKnownPresence === "present") {
+          try {
+            await markProblemSlot(
+              imei,
+              currentBattery.slot_id,
+              currentBattery.battery_id,
+              failureNote,
+            );
+          } catch (recoveryError) {
+            console.error(
+              "Failed to mark problem slot after preauthorization cancel path:",
+              recoveryError instanceof Error
+                ? recoveryError.message
+                : recoveryError,
+            );
+          }
+        }
 
-      if (lastKnownPresence === "present") {
+        let cancelError: unknown = null;
+
         try {
-          await markProblemSlot(
-            imei,
-            currentBattery.slot_id,
-            currentBattery.battery_id,
-            failureNote,
-          );
-          await markRentalReturnedAfterFailedUnlock(
-            rentalRef.id,
-            currentBattery.battery_id,
-            failureNote,
-          );
-        } catch (recoveryError) {
-          console.error(
-            "Failed to mark problem slot or close failed unlock rental:",
-            recoveryError instanceof Error
-              ? recoveryError.message
-              : recoveryError,
+          const cancelResponse = await cancelWaafiPreauthorization({
+            transactionId,
+            description: "Battery release failed, hold cancelled",
+          });
+
+          if (!isWaafiApproved(cancelResponse)) {
+            cancelError = new Error(
+              cancelResponse.responseMsg || "Waafi cancel was not approved",
+            );
+          }
+        } catch (error) {
+          cancelError = error;
+        }
+
+        if (cancelError) {
+          throw new HttpError(
+            502,
+            "Battery could not be released and payment hold cancellation could not be confirmed. Please contact support.",
+            {
+              transactionId,
+              batteryId: currentBattery.battery_id,
+              slotId: currentBattery.slot_id,
+              unlockAttempts,
+            },
           );
         }
-      }
 
+        throw new HttpError(
+          502,
+          "Battery could not be released. Payment hold was cancelled.",
+          {
+            transactionId,
+            batteryId: currentBattery.battery_id,
+            slotId: currentBattery.slot_id,
+            unlockAttempts,
+            waafiMsg: "Payment hold cancelled after eject failure",
+          },
+        );
+      }
+    }
+
+    let commitResponse;
+    try {
+      commitResponse = await commitWaafiPreauthorization({
+        transactionId,
+        description: "Powerbank rental committed after successful eject",
+      });
+    } catch (error) {
       await notifyPaidButNotEjected({
         phoneNumber,
         amount,
@@ -365,12 +373,12 @@ export async function processPayment(
         issuerTransactionId,
         referenceId,
         unlockAttempts,
-        reason: failureNote,
+        reason: `Battery released, but Waafi commit request failed: ${error instanceof Error ? error.message : String(error)}`,
       });
 
       throw new HttpError(
         502,
-        "Payment was received but the battery could not be released. Please contact support.",
+        "Battery was released, but payment confirmation could not be completed. Please contact support.",
         {
           transactionId,
           batteryId: currentBattery.battery_id,
@@ -380,6 +388,87 @@ export async function processPayment(
       );
     }
 
+    if (!isWaafiApproved(commitResponse)) {
+      await notifyPaidButNotEjected({
+        phoneNumber,
+        amount,
+        imei,
+        stationCode,
+        batteryId: currentBattery.battery_id,
+        slotId: currentBattery.slot_id,
+        transactionId,
+        issuerTransactionId,
+        referenceId,
+        unlockAttempts,
+        reason: "Battery likely ejected, but Waafi commit was not approved",
+      });
+
+      throw new HttpError(
+        502,
+        "Battery was released, but payment confirmation could not be completed. Please contact support.",
+        {
+          transactionId,
+          batteryId: currentBattery.battery_id,
+          slotId: currentBattery.slot_id,
+          unlockAttempts,
+        },
+      );
+    }
+
+    const commitIds = extractWaafiIds(commitResponse);
+    const waafiAudit = mergeWaafiAuditRecords(
+      preauthAudit,
+      extractWaafiAudit(commitResponse),
+    );
+
+    let rentalRef;
+    try {
+      rentalRef = await createRentalLog({
+        imei,
+        stationCode,
+        batteryId: currentBattery.battery_id,
+        slotId: currentBattery.slot_id,
+        phoneNumber: canonicalPhoneNumber,
+        requestedPhoneNumber: phoneNumber,
+        amount,
+        transactionId: commitIds.transactionId || transactionId,
+        issuerTransactionId,
+        referenceId: commitIds.referenceId || referenceId || preauthReferenceId,
+        phoneAuthority,
+        waafiAudit,
+      });
+    } catch (error) {
+      if (error instanceof BatteryStateConflictError) {
+        await notifyPaidButNotEjected({
+          phoneNumber,
+          amount,
+          imei,
+          stationCode,
+          batteryId: currentBattery.battery_id,
+          slotId: currentBattery.slot_id,
+          transactionId,
+          issuerTransactionId,
+          referenceId: commitIds.referenceId || referenceId || preauthReferenceId,
+          unlockAttempts,
+          reason: `Payment committed but battery already linked to active rental ${error.activeRentalId || "unknown"}`,
+        });
+
+        throw new HttpError(
+          409,
+          "Payment was confirmed, but this battery was already linked to another active rental. Please contact support.",
+          {
+            batteryId: error.batteryId,
+            activeRentalId: error.activeRentalId,
+            transactionId,
+          },
+        );
+      }
+
+      throw error;
+    }
+
+    await releaseReservation(imei, currentBattery.battery_id);
+    reservedBatteryId = null;
     await updateRentalUnlockStatus(rentalRef.id, "unlocked");
 
     return {
@@ -387,8 +476,8 @@ export async function processPayment(
       battery_id: currentBattery.battery_id,
       slot_id: currentBattery.slot_id,
       unlock,
-      waafiMessage: waafiResponse.responseMsg || "Payment successful",
-      waafiResponse,
+      waafiMessage: "Battery released and payment confirmed",
+      waafiResponse: commitResponse,
     };
   } finally {
     if (reservedBatteryId) {
