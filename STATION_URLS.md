@@ -18,7 +18,7 @@
 - **URL**: https://station61.danab.site
 ---
 
-### Station 62 - Beydhan Coffe
+### Station 62 - Arena cafe Mogadishu
 - **URL**: https://station62.danab.site
 ---
 
@@ -30,7 +30,7 @@
 | 59 | Feynuus Bowling | https://station59.danab.site | WSEP161741066502 |
 | 60 | Java Taleex | https://station60.danab.site | WSEP161741066503 |
 | 61 | Delik Somalia | https://station61.danab.site | WSEP161741066504 |
-| 62 | Beydhan Coffe | https://station62.danab.site | WSEP161741066505 |
+| 62 | Arena cafe Mogadishu | https://station62.danab.site | WSEP161741066505 |
 
 ---
 

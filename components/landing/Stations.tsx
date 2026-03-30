@@ -27,7 +27,7 @@ const STATIONS = [
   },
   {
     id: 62,
-    name: "Beydhan Coffe",
+    name: "Arena cafe Mogadishu",
     url: "https://station62.danab.site",
     area: "Mogadishu",
   },

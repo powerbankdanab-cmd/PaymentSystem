@@ -9,7 +9,7 @@ const STATION_NAMES: Record<string, string> = {
   "59": "Danab-Feynuus\nBowling",
   "60": "Danab-Java\nTaleex",
   "61": "Danab-Delik\nSomalia",
-  "62": "Danab-Beydhan\nCoffe",
+  "62": "Danab-Arena Cafe\nMogadishu",
 };
 
 export const STATION_CONFIGS: Record<string, StationConfig> = {
