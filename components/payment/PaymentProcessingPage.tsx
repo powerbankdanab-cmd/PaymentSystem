@@ -16,7 +16,6 @@ import {
   PaymentStatus,
   ProcessingStep,
 } from "@/components/payment/types";
-import { getUsersBackendUrl } from "@/lib/client/backend";
 import { getStationCode } from "@/lib/client/station";
 
 type ApiResponse = {
@@ -175,7 +174,7 @@ export function PaymentProcessingPage() {
         }, PAYMENT_REQUEST_TIMEOUT_MS);
         paymentRequestAbortRef.current = controller;
 
-        const paymentRes = await fetch(getUsersBackendUrl("/api/pay"), {
+        const paymentRes = await fetch("/api/pay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
