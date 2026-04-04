@@ -16,6 +16,8 @@ import {
   PaymentStatus,
   ProcessingStep,
 } from "@/components/payment/types";
+import { getUsersBackendUrl } from "@/lib/client/backend";
+import { getStationCode } from "@/lib/client/station";
 
 type ApiResponse = {
   success?: boolean;
@@ -104,6 +106,18 @@ export function PaymentProcessingPage() {
     slotId: string;
   } | null>(null);
   const PAYMENT_REQUEST_TIMEOUT_MS = 280_000;
+  const stationCode = useMemo(() => {
+    const fromQuery = String(searchParams.get("stationCode") || "").replace(
+      /\D/g,
+      "",
+    );
+
+    if (fromQuery) {
+      return fromQuery;
+    }
+
+    return getStationCode();
+  }, [searchParams]);
 
   const clearPaymentAbort = () => {
     if (paymentRequestAbortRef.current) {
@@ -161,7 +175,7 @@ export function PaymentProcessingPage() {
         }, PAYMENT_REQUEST_TIMEOUT_MS);
         paymentRequestAbortRef.current = controller;
 
-        const paymentRes = await fetch("/api/pay", {
+        const paymentRes = await fetch(getUsersBackendUrl("/api/pay"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -169,6 +183,7 @@ export function PaymentProcessingPage() {
             phoneNumber,
             amount,
             method,
+            ...(stationCode ? { stationCode } : {}),
           }),
         }).finally(() => {
           window.clearTimeout(requestTimeout);
@@ -247,7 +262,7 @@ export function PaymentProcessingPage() {
       cancelled = true;
       clearPaymentAbort();
     };
-  }, [amount, method, phoneNumber]);
+  }, [amount, method, phoneNumber, stationCode]);
 
   const activeStepIndex = PROCESSING_STEPS.findIndex(
     (step) => step.key === processingStep,

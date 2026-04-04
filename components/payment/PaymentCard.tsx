@@ -21,6 +21,7 @@ import { PhoneInput } from "@/components/payment/PhoneInput";
 import { RulesAgreement } from "@/components/payment/RulesAgreement";
 import { TimeOptions } from "@/components/payment/TimeOptions";
 import { PaymentMethod } from "@/components/payment/types";
+import { getStationCode } from "@/lib/client/station";
 
 const PAYMENT_FLOW_RESET_KEY = "caste:payment-flow-reset-home-form";
 const DEFAULT_AMOUNT = 0.75;
@@ -108,6 +109,10 @@ export function PaymentCard({
       amount: String(selectedAmount),
       method: selectedMethod,
     });
+    const stationCode = getStationCode();
+    if (stationCode) {
+      params.set("stationCode", stationCode);
+    }
 
     router.push(`/payment?${params.toString()}`);
   };
