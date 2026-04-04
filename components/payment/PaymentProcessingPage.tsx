@@ -26,6 +26,7 @@ type ApiResponse = {
   slot_id?: string;
   waafiMessage?: string;
   waafiMsg?: string;
+  message?: string;
 };
 
 const PROCESSING_STEPS: Array<{ key: ProcessingStep; label: string }> = [
@@ -209,6 +210,7 @@ export function PaymentProcessingPage() {
           setStatus("success");
           setWaafiMessage(
             paymentData.waafiMessage ||
+              paymentData.message ||
               "Battery-gu wuu soo baxay, lacagtiina waa la xaqiijiyay!",
           );
           setBatteryInfo(
@@ -225,8 +227,12 @@ export function PaymentProcessingPage() {
         setStatus("failed");
         setErrorMessage(
           mapBackendErrorMessage(
-            paymentData.error || "Khalad dhacay, fadlan mar kale isku day",
-            paymentData.waafiMsg,
+            paymentData.error ||
+              paymentData.waafiMessage ||
+              paymentData.waafiMsg ||
+              paymentData.message ||
+              "Khalad dhacay, fadlan mar kale isku day",
+            paymentData.waafiMsg || paymentData.waafiMessage,
           ),
         );
       } catch (error) {
