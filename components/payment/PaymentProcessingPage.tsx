@@ -27,6 +27,9 @@ type ApiResponse = {
   waafiMessage?: string;
   waafiMsg?: string;
   message?: string;
+  waafiResponse?: {
+    responseMsg?: string;
+  };
 };
 
 const PROCESSING_STEPS: Array<{ key: ProcessingStep; label: string }> = [
@@ -190,6 +193,11 @@ export function PaymentProcessingPage() {
         });
 
         const paymentData = await safeReadJson(paymentRes);
+        const returnedWaafiMessage =
+          paymentData.waafiResponse?.responseMsg ||
+          paymentData.waafiMsg ||
+          paymentData.waafiMessage ||
+          "";
 
         if (cancelled) return;
 
@@ -209,7 +217,7 @@ export function PaymentProcessingPage() {
         if (paymentRes.ok && paymentData.success) {
           setStatus("success");
           setWaafiMessage(
-            paymentData.waafiMessage ||
+            returnedWaafiMessage ||
               paymentData.message ||
               "Battery-gu wuu soo baxay, lacagtiina waa la xaqiijiyay!",
           );
@@ -225,14 +233,17 @@ export function PaymentProcessingPage() {
         }
 
         setStatus("failed");
+        if (returnedWaafiMessage) {
+          setErrorMessage(returnedWaafiMessage);
+          return;
+        }
+
         setErrorMessage(
           mapBackendErrorMessage(
             paymentData.error ||
-              paymentData.waafiMessage ||
-              paymentData.waafiMsg ||
               paymentData.message ||
               "Khalad dhacay, fadlan mar kale isku day",
-            paymentData.waafiMsg || paymentData.waafiMessage,
+            returnedWaafiMessage,
           ),
         );
       } catch (error) {
