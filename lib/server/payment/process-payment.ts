@@ -312,9 +312,12 @@ export async function processPayment(
         }
 
         let cancelError: unknown = null;
+        let cancelResponse:
+          | Awaited<ReturnType<typeof cancelWaafiPreauthorization>>
+          | null = null;
 
         try {
-          const cancelResponse = await cancelWaafiPreauthorization({
+          cancelResponse = await cancelWaafiPreauthorization({
             transactionId,
             description: "Battery release failed, hold cancelled",
           });
@@ -337,6 +340,10 @@ export async function processPayment(
               batteryId: currentBattery.battery_id,
               slotId: currentBattery.slot_id,
               unlockAttempts,
+              waafiResponse: cancelResponse,
+              waafiMsg:
+                cancelResponse?.responseMsg ||
+                "Payment hold cancellation could not be confirmed.",
             },
           );
         }
@@ -349,7 +356,10 @@ export async function processPayment(
             batteryId: currentBattery.battery_id,
             slotId: currentBattery.slot_id,
             unlockAttempts,
-            waafiMsg: "Payment hold cancelled after eject failure",
+            waafiResponse: cancelResponse,
+            waafiMsg:
+              cancelResponse?.responseMsg ||
+              "Payment hold cancelled after eject failure",
           },
         );
       }
@@ -384,6 +394,9 @@ export async function processPayment(
           batteryId: currentBattery.battery_id,
           slotId: currentBattery.slot_id,
           unlockAttempts,
+          waafiMsg:
+            (error instanceof Error && error.message) ||
+            "Waafi commit request failed.",
         },
       );
     }
@@ -411,6 +424,9 @@ export async function processPayment(
           batteryId: currentBattery.battery_id,
           slotId: currentBattery.slot_id,
           unlockAttempts,
+          waafiResponse: commitResponse,
+          waafiMsg:
+            commitResponse.responseMsg || "Waafi commit was not approved.",
         },
       );
     }
