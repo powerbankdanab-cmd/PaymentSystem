@@ -6,9 +6,9 @@ const STATION_NAMES: Record<string, string> = {
   "62": "Danab-Arena Cafe\nMogadishu",
 };
 
-export function getStationCode(): string {
+export function getStationName(): string {
   if (typeof window === "undefined") {
-    return "";
+    return "Danab Power Bank";
   }
 
   const hostname = window.location.hostname;
@@ -18,16 +18,7 @@ export function getStationCode(): string {
   const stationNumber = subdomain.replace(/\D/g, "");
 
   if (stationNumber && STATION_NAMES[stationNumber]) {
-    return stationNumber;
-  }
-
-  return "";
-}
-
-export function getStationName(): string {
-  const stationCode = getStationCode();
-  if (stationCode && STATION_NAMES[stationCode]) {
-    return STATION_NAMES[stationCode];
+    return STATION_NAMES[stationNumber];
   }
 
   return "Danab Power Bank";

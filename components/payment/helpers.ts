@@ -33,17 +33,6 @@ export function validatePaymentInput(
 export function mapBackendErrorMessage(message: string, waafiMsg?: string) {
   const lowerMessage = message.toLowerCase();
 
-  if (
-    waafiMsg &&
-    (message.includes("Payment hold not approved") ||
-      message.includes("Payment not approved") ||
-      message.includes("Payment hold was approved") ||
-      message.includes("Battery could not be released. Payment hold was cancelled.") ||
-      message.includes("Battery was released, but payment confirmation could not be completed."))
-  ) {
-    return waafiMsg;
-  }
-
   if (message.includes("No available battery")) {
     return "Ma jiro baytari diyaar ah hadda. Station-ku waa la damiyay ama battery-gu way dhammaadeen.";
   }

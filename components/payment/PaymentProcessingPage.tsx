@@ -16,7 +16,6 @@ import {
   PaymentStatus,
   ProcessingStep,
 } from "@/components/payment/types";
-import { getStationCode } from "@/lib/client/station";
 
 type ApiResponse = {
   success?: boolean;
@@ -26,10 +25,6 @@ type ApiResponse = {
   slot_id?: string;
   waafiMessage?: string;
   waafiMsg?: string;
-  message?: string;
-  waafiResponse?: {
-    responseMsg?: string;
-  };
 };
 
 const PROCESSING_STEPS: Array<{ key: ProcessingStep; label: string }> = [
@@ -109,18 +104,6 @@ export function PaymentProcessingPage() {
     slotId: string;
   } | null>(null);
   const PAYMENT_REQUEST_TIMEOUT_MS = 280_000;
-  const stationCode = useMemo(() => {
-    const fromQuery = String(searchParams.get("stationCode") || "").replace(
-      /\D/g,
-      "",
-    );
-
-    if (fromQuery) {
-      return fromQuery;
-    }
-
-    return getStationCode();
-  }, [searchParams]);
 
   const clearPaymentAbort = () => {
     if (paymentRequestAbortRef.current) {
@@ -186,18 +169,12 @@ export function PaymentProcessingPage() {
             phoneNumber,
             amount,
             method,
-            ...(stationCode ? { stationCode } : {}),
           }),
         }).finally(() => {
           window.clearTimeout(requestTimeout);
         });
 
         const paymentData = await safeReadJson(paymentRes);
-        const returnedWaafiMessage =
-          paymentData.waafiResponse?.responseMsg ||
-          paymentData.waafiMsg ||
-          paymentData.waafiMessage ||
-          "";
 
         if (cancelled) return;
 
@@ -217,8 +194,7 @@ export function PaymentProcessingPage() {
         if (paymentRes.ok && paymentData.success) {
           setStatus("success");
           setWaafiMessage(
-            returnedWaafiMessage ||
-              paymentData.message ||
+            paymentData.waafiMessage ||
               "Battery-gu wuu soo baxay, lacagtiina waa la xaqiijiyay!",
           );
           setBatteryInfo(
@@ -233,17 +209,10 @@ export function PaymentProcessingPage() {
         }
 
         setStatus("failed");
-        if (returnedWaafiMessage) {
-          setErrorMessage(returnedWaafiMessage);
-          return;
-        }
-
         setErrorMessage(
           mapBackendErrorMessage(
-            paymentData.error ||
-              paymentData.message ||
-              "Khalad dhacay, fadlan mar kale isku day",
-            returnedWaafiMessage,
+            paymentData.error || "Khalad dhacay, fadlan mar kale isku day",
+            paymentData.waafiMsg,
           ),
         );
       } catch (error) {
@@ -278,7 +247,7 @@ export function PaymentProcessingPage() {
       cancelled = true;
       clearPaymentAbort();
     };
-  }, [amount, method, phoneNumber, stationCode]);
+  }, [amount, method, phoneNumber]);
 
   const activeStepIndex = PROCESSING_STEPS.findIndex(
     (step) => step.key === processingStep,

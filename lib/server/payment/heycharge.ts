@@ -11,8 +11,8 @@ type HeyChargeStationResponse = {
   batteries?: Battery[];
 };
 
-const HEYCHARGE_QUERY_TIMEOUT_MS = 12_000;
-const HEYCHARGE_RELEASE_TIMEOUT_MS = 10_000;
+const HEYCHARGE_QUERY_TIMEOUT_MS = 20_000;
+const HEYCHARGE_RELEASE_TIMEOUT_MS = 25_000;
 export const MIN_AVAILABLE_BATTERY_PERCENT = 60;
 
 function buildHeyChargeAuthHeader() {

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isHttpError, processPayment } from "@/lib/server/payment-service";
+
 import { checkRateLimit } from "@/lib/server/rate-limit";
+
 import { getClientIp } from "@/lib/server/request";
-import { getOptionalEnv } from "@/lib/server/env";
 
 type PaymentRequestBody = {
   phoneNumber?: string;
@@ -35,16 +37,6 @@ function parseAndValidateBody(body: PaymentRequestBody) {
 }
 
 export const maxDuration = 300;
-
-const DEFAULT_USERS_BACKEND_URL = "https://usersbackend-6yhs.onrender.com";
-
-function getUsersBackendBaseUrl() {
-  return (
-    getOptionalEnv("USERS_BACKEND_URL") ||
-    getOptionalEnv("NEXT_PUBLIC_USERS_BACKEND_URL") ||
-    DEFAULT_USERS_BACKEND_URL
-  ).replace(/\/+$/, "");
-}
 
 export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
@@ -84,32 +76,24 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const upstreamResponse = await fetch(`${getUsersBackendBaseUrl()}/api/pay`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(parsed),
-      cache: "no-store",
-    });
+    const result = await processPayment(parsed);
 
-    let payload: unknown = null;
-    try {
-      payload = (await upstreamResponse.json()) as unknown;
-    } catch {
-      payload = {
-        error: upstreamResponse.ok
-          ? "Invalid backend response"
-          : "Backend request failed",
-      };
+    return NextResponse.json(result);
+  } catch (error) {
+    if (isHttpError(error)) {
+      const payload = error.details
+        ? {
+            error: error.message,
+
+            ...(error.details as Record<string, unknown>),
+          }
+        : { error: error.message };
+
+      return NextResponse.json(payload, { status: error.status });
     }
 
-    return NextResponse.json(payload, { status: upstreamResponse.status });
-  } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Could not reach payment backend";
+      error instanceof Error ? error.message : "Internal server error";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
