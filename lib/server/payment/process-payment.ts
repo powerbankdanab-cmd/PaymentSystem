@@ -36,8 +36,8 @@ import {
   requestWaafiPreauthorization,
 } from "@/lib/server/payment/waafi";
 
-const MAX_UNLOCK_ATTEMPTS = 3;
-const UNLOCK_RETRY_DELAY_MS = 2_500;
+const MAX_UNLOCK_ATTEMPTS = 5;
+const UNLOCK_RETRY_DELAY_MS = 5_000;
 
 type BatteryPresence = "present" | "missing" | "unknown";
 
