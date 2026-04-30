@@ -68,11 +68,11 @@ export function mapBackendErrorMessage(message: string, waafiMsg?: string) {
   }
 
   if (message.includes("Payment was approved")) {
-    return "Lacag bixintu way dhacday, laakiin transaction ID lama helin. Fadlan la xiriir support-ka Danab.";
+    return "Codsiga lama xaqiijin. Fadlan la xiriir support-ka Danab.";
   }
 
   if (message.includes("Battery could not be released. Payment was reversed.")) {
-    return "Battery-gu ma soo bixin. Lacagtii waa la reverse gareeyay.";
+    return "Codsiga lama dhameystirin. Fadlan mar kale isku day ama la xiriir support-ka Danab.";
   }
 
   if (
@@ -80,7 +80,7 @@ export function mapBackendErrorMessage(message: string, waafiMsg?: string) {
       "Battery could not be released after payment was charged.",
     )
   ) {
-    return "Battery-gu ma soo bixin, laakiin lacagta waa la jaray. Fadlan la xiriir support-ka Danab.";
+    return "Codsiga lama dhameystirin. Fadlan la xiriir support-ka Danab.";
   }
 
   if (lowerMessage.includes("timed out") || lowerMessage.includes("timeout")) {

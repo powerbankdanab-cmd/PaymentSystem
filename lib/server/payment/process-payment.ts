@@ -410,7 +410,7 @@ export async function processPayment(
       battery_id: currentBattery.battery_id,
       slot_id: currentBattery.slot_id,
       unlock,
-      waafiMessage: "Battery released and payment charged",
+      waafiMessage: "Codsigaagu wuu guuleystay. Fadlan qaado power bank-gaaga.",
       waafiResponse: purchaseResponse,
     };
   } finally {

@@ -29,8 +29,8 @@ type ApiResponse = {
 
 const PROCESSING_STEPS: Array<{ key: ProcessingStep; label: string }> = [
   { key: "verify", label: "Hubinta" },
-  { key: "charge", label: "Lacag" },
-  { key: "unlock", label: "Battery" },
+  { key: "charge", label: "Shaqeyn" },
+  { key: "unlock", label: "Dhameystir" },
 ];
 
 async function safeReadJson(response: Response): Promise<ApiResponse> {
@@ -98,10 +98,6 @@ export function PaymentProcessingPage() {
   );
   const [errorMessage, setErrorMessage] = useState("");
   const [waafiMessage, setWaafiMessage] = useState("");
-  const [batteryInfo, setBatteryInfo] = useState<{
-    batteryId: string;
-    slotId: string;
-  } | null>(null);
   const PAYMENT_REQUEST_TIMEOUT_MS = 280_000;
 
   const clearPaymentAbort = () => {
@@ -140,7 +136,6 @@ export function PaymentProcessingPage() {
       setStatusMessage("Hubinaya macluumaadka...");
       setErrorMessage("");
       setWaafiMessage("");
-      setBatteryInfo(null);
       let requestTimedOut = false;
 
       try {
@@ -150,7 +145,7 @@ export function PaymentProcessingPage() {
 
         // Step 2: Charge — request stays in-flight while backend runs.
         setProcessingStep("charge");
-        setStatusMessage("Lacagta si toos ah ayaa loo jarayaa...");
+        setStatusMessage("Codsigaaga waa la shaqeynayaa...");
 
         clearPaymentAbort();
         const controller = new AbortController();
@@ -179,7 +174,7 @@ export function PaymentProcessingPage() {
 
         // Show unlock completion after the backend finishes.
         setProcessingStep("unlock");
-        setStatusMessage("Furaya battery-ga...");
+        setStatusMessage("Codsigaaga waa la dhameystirayaa...");
 
         await wait(900);
         if (cancelled) return;
@@ -188,15 +183,7 @@ export function PaymentProcessingPage() {
           setStatus("success");
           setWaafiMessage(
             paymentData.waafiMessage ||
-              "Battery-gu wuu soo baxay, lacagtiina si toos ah ayaa loo jaray!",
-          );
-          setBatteryInfo(
-            paymentData.battery_id && paymentData.slot_id
-              ? {
-                  batteryId: paymentData.battery_id,
-                  slotId: paymentData.slot_id,
-                }
-              : null,
+              "Codsigaagu wuu guuleystay. Fadlan qaado power bank-gaaga.",
           );
           return;
         }
@@ -277,9 +264,7 @@ export function PaymentProcessingPage() {
               {method} • {formatAmount(amount)}
             </p>
             <p className="mt-3 text-sm leading-6 text-slate-500">
-              Web-kan hadda wuxuu adeegsanayaa Waafi direct purchase flow:
-              lacagta si toos ah ayaa loo jarayaa, kadib battery-ga ayaa la
-              furayaa.
+              Fadlan sug inta codsigaaga la dhameystirayo.
             </p>
 
             <div className="mt-8 flex items-start justify-between gap-2">
@@ -352,17 +337,6 @@ export function PaymentProcessingPage() {
             <h2 className="text-2xl font-bold text-green-700">Guul!</h2>
             <p className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
               {waafiMessage}
-            </p>
-            {batteryInfo && (
-              <p className="mt-3 text-sm text-slate-600">
-                Battery <strong>{batteryInfo.batteryId}</strong> waa la furay
-                Slot <strong>{batteryInfo.slotId}</strong>.
-              </p>
-            )}
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              Output-ka cusub waa sidan: lacagta si toos ah ayaa loo jaraa,
-              kadib battery-ga ayaa la furaa. Haddii eject-ku fashilmo, system-ku
-              wuxuu isku dayayaa inuu lacagta reverse gareeyo.
             </p>
 
             <div className="mt-6">
