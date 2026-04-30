@@ -5,11 +5,7 @@ import { WaafiResponse } from "@/lib/server/payment/types";
 
 const WAAFI_REQUEST_TIMEOUT_MS = 20_000;
 
-type WaafiServiceName =
-  | "API_PURCHASE"
-  | "API_PREAUTHORIZE"
-  | "API_PREAUTHORIZE_COMMIT"
-  | "API_PREAUTHORIZE_CANCEL";
+type WaafiServiceName = "API_PURCHASE" | "API_REVERSAL";
 
 function normalizePhoneDigits(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -19,6 +15,16 @@ function normalizePhoneDigits(value: string) {
   }
 
   return digits;
+}
+
+function toWaafiAccountNumber(value: string) {
+  const digits = value.replace(/\D/g, "").replace(/^0+/, "");
+
+  if (digits.startsWith("252")) {
+    return digits;
+  }
+
+  return `252${digits}`;
 }
 
 async function requestWaafiAction({
@@ -77,7 +83,7 @@ async function requestWaafiAction({
   return (responsePayload || {}) as WaafiResponse;
 }
 
-export async function requestWaafiPreauthorization({
+export async function requestWaafiPurchase({
   phoneNumber,
   amount,
   referenceId,
@@ -87,21 +93,22 @@ export async function requestWaafiPreauthorization({
   referenceId: string;
 }) {
   return requestWaafiAction({
-    serviceName: "API_PREAUTHORIZE",
+    serviceName: "API_PURCHASE",
     serviceParams: {
       paymentMethod: "MWALLET_ACCOUNT",
-      payerInfo: { accountNo: phoneNumber },
+      payerInfo: { accountNo: toWaafiAccountNumber(phoneNumber) },
       transactionInfo: {
         referenceId,
+        invoiceId: referenceId,
         amount: amount.toFixed(2),
         currency: "USD",
-        description: "Powerbank rental hold",
+        description: "Powerbank rental payment",
       },
     },
   });
 }
 
-export async function commitWaafiPreauthorization({
+export async function reverseWaafiPurchase({
   transactionId,
   description,
 }: {
@@ -109,26 +116,10 @@ export async function commitWaafiPreauthorization({
   description?: string;
 }) {
   return requestWaafiAction({
-    serviceName: "API_PREAUTHORIZE_COMMIT",
+    serviceName: "API_REVERSAL",
     serviceParams: {
       transactionId,
-      description: description || "Powerbank rental committed",
-    },
-  });
-}
-
-export async function cancelWaafiPreauthorization({
-  transactionId,
-  description,
-}: {
-  transactionId: string;
-  description?: string;
-}) {
-  return requestWaafiAction({
-    serviceName: "API_PREAUTHORIZE_CANCEL",
-    serviceParams: {
-      transactionId,
-      description: description || "Powerbank rental cancelled",
+      description: description || "Powerbank rental payment reversed",
     },
   });
 }

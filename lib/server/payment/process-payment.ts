@@ -27,13 +27,11 @@ import { getStationConfigByCode } from "@/lib/server/station-config";
 import { notifyPaidButNotEjected } from "@/lib/server/payment/telegram";
 import { PaymentInput, PaymentPayload } from "@/lib/server/payment/types";
 import {
-  cancelWaafiPreauthorization,
-  commitWaafiPreauthorization,
   extractWaafiAudit,
   extractWaafiIds,
   isWaafiApproved,
-  mergeWaafiAuditRecords,
-  requestWaafiPreauthorization,
+  requestWaafiPurchase,
+  reverseWaafiPurchase,
 } from "@/lib/server/payment/waafi";
 
 const MAX_UNLOCK_ATTEMPTS = 5;
@@ -158,31 +156,31 @@ export async function processPayment(
       );
     }
 
-    // ── Waafi hold first, then eject, then commit/cancel ─────────
-    const preauthReferenceId = `ref-${Date.now()}`;
-    const preauthResponse = await requestWaafiPreauthorization({
+    // Charge first with Waafi purchase, then release the reserved battery.
+    const purchaseReferenceId = `ref-${Date.now()}`;
+    const purchaseResponse = await requestWaafiPurchase({
       phoneNumber,
       amount,
-      referenceId: preauthReferenceId,
+      referenceId: purchaseReferenceId,
     });
 
-    if (!isWaafiApproved(preauthResponse)) {
-      throw new HttpError(400, "Payment hold not approved", {
-        waafiResponse: preauthResponse,
-        waafiMsg: preauthResponse.responseMsg || "",
+    if (!isWaafiApproved(purchaseResponse)) {
+      throw new HttpError(400, "Payment not approved", {
+        waafiResponse: purchaseResponse,
+        waafiMsg: purchaseResponse.responseMsg || "",
       });
     }
 
     const { transactionId, issuerTransactionId, referenceId } =
-      extractWaafiIds(preauthResponse);
-    const preauthAudit = extractWaafiAudit(preauthResponse);
+      extractWaafiIds(purchaseResponse);
+    const waafiAudit = extractWaafiAudit(purchaseResponse);
     const waafiConfirmedPhoneNumber =
-      typeof preauthAudit.waafiConfirmedPhoneNumber === "string" &&
-      preauthAudit.waafiConfirmedPhoneNumber.trim().length > 0
-        ? preauthAudit.waafiConfirmedPhoneNumber.trim()
+      typeof waafiAudit.waafiConfirmedPhoneNumber === "string" &&
+      waafiAudit.waafiConfirmedPhoneNumber.trim().length > 0
+        ? waafiAudit.waafiConfirmedPhoneNumber.trim()
         : null;
     // Keep the approved requested phone immutable for operations/calling.
-    // Waafi account data stays in dedicated audit fields because Purchase API
+    // Waafi account data stays in dedicated audit fields because it
     // may return a masked account string that is not safe to treat as the
     // main customer phone number.
     const canonicalPhoneNumber = phoneNumber;
@@ -195,25 +193,13 @@ export async function processPayment(
     if (!transactionId) {
       throw new HttpError(
         502,
-        "Payment hold was approved, but Waafi did not return a transaction ID. Please try again.",
+        "Payment was approved, but Waafi did not return a transaction ID. Please try again.",
       );
     }
 
     if (transactionId) {
       const duplicate = await isDuplicateTransaction(transactionId);
       if (duplicate) {
-        try {
-          await cancelWaafiPreauthorization({
-            transactionId,
-            description: "Duplicate preauthorization hold cancelled",
-          });
-        } catch (error) {
-          console.warn(
-            "Failed to cancel duplicate preauthorization hold:",
-            error instanceof Error ? error.message : error,
-          );
-        }
-
         return {
           success: true,
           message: "Payment already processed",
@@ -303,7 +289,7 @@ export async function processPayment(
             );
           } catch (recoveryError) {
             console.error(
-              "Failed to mark problem slot after preauthorization cancel path:",
+              "Failed to mark problem slot after purchase reversal path:",
               recoveryError instanceof Error
                 ? recoveryError.message
                 : recoveryError,
@@ -311,27 +297,41 @@ export async function processPayment(
           }
         }
 
-        let cancelError: unknown = null;
+        let reversalError: unknown = null;
 
         try {
-          const cancelResponse = await cancelWaafiPreauthorization({
+          const reversalResponse = await reverseWaafiPurchase({
             transactionId,
-            description: "Battery release failed, hold cancelled",
+            description: "Battery release failed, payment reversed",
           });
 
-          if (!isWaafiApproved(cancelResponse)) {
-            cancelError = new Error(
-              cancelResponse.responseMsg || "Waafi cancel was not approved",
+          if (!isWaafiApproved(reversalResponse)) {
+            reversalError = new Error(
+              reversalResponse.responseMsg || "Waafi reversal was not approved",
             );
           }
         } catch (error) {
-          cancelError = error;
+          reversalError = error;
         }
 
-        if (cancelError) {
+        if (reversalError) {
+          await notifyPaidButNotEjected({
+            phoneNumber,
+            amount,
+            imei,
+            stationCode,
+            batteryId: currentBattery.battery_id,
+            slotId: currentBattery.slot_id,
+            transactionId,
+            issuerTransactionId,
+            referenceId,
+            unlockAttempts,
+            reason: `Battery release failed after payment charge, and Waafi reversal failed: ${reversalError instanceof Error ? reversalError.message : String(reversalError)}`,
+          });
+
           throw new HttpError(
             502,
-            "Battery could not be released and payment hold cancellation could not be confirmed. Please contact support.",
+            "Battery could not be released after payment was charged. Please contact support.",
             {
               transactionId,
               batteryId: currentBattery.battery_id,
@@ -343,83 +343,17 @@ export async function processPayment(
 
         throw new HttpError(
           502,
-          "Battery could not be released. Payment hold was cancelled.",
+          "Battery could not be released. Payment was reversed.",
           {
             transactionId,
             batteryId: currentBattery.battery_id,
             slotId: currentBattery.slot_id,
             unlockAttempts,
-            waafiMsg: "Payment hold cancelled after eject failure",
+            waafiMsg: "Payment reversed after eject failure",
           },
         );
       }
     }
-
-    let commitResponse;
-    try {
-      commitResponse = await commitWaafiPreauthorization({
-        transactionId,
-        description: "Powerbank rental committed after successful eject",
-      });
-    } catch (error) {
-      await notifyPaidButNotEjected({
-        phoneNumber,
-        amount,
-        imei,
-        stationCode,
-        batteryId: currentBattery.battery_id,
-        slotId: currentBattery.slot_id,
-        transactionId,
-        issuerTransactionId,
-        referenceId,
-        unlockAttempts,
-        reason: `Battery released, but Waafi commit request failed: ${error instanceof Error ? error.message : String(error)}`,
-      });
-
-      throw new HttpError(
-        502,
-        "Battery was released, but payment confirmation could not be completed. Please contact support.",
-        {
-          transactionId,
-          batteryId: currentBattery.battery_id,
-          slotId: currentBattery.slot_id,
-          unlockAttempts,
-        },
-      );
-    }
-
-    if (!isWaafiApproved(commitResponse)) {
-      await notifyPaidButNotEjected({
-        phoneNumber,
-        amount,
-        imei,
-        stationCode,
-        batteryId: currentBattery.battery_id,
-        slotId: currentBattery.slot_id,
-        transactionId,
-        issuerTransactionId,
-        referenceId,
-        unlockAttempts,
-        reason: "Battery likely ejected, but Waafi commit was not approved",
-      });
-
-      throw new HttpError(
-        502,
-        "Battery was released, but payment confirmation could not be completed. Please contact support.",
-        {
-          transactionId,
-          batteryId: currentBattery.battery_id,
-          slotId: currentBattery.slot_id,
-          unlockAttempts,
-        },
-      );
-    }
-
-    const commitIds = extractWaafiIds(commitResponse);
-    const waafiAudit = mergeWaafiAuditRecords(
-      preauthAudit,
-      extractWaafiAudit(commitResponse),
-    );
 
     let rentalRef;
     try {
@@ -431,9 +365,9 @@ export async function processPayment(
         phoneNumber: canonicalPhoneNumber,
         requestedPhoneNumber: phoneNumber,
         amount,
-        transactionId: commitIds.transactionId || transactionId,
+        transactionId,
         issuerTransactionId,
-        referenceId: commitIds.referenceId || referenceId || preauthReferenceId,
+        referenceId: referenceId || purchaseReferenceId,
         phoneAuthority,
         waafiAudit,
       });
@@ -448,9 +382,9 @@ export async function processPayment(
           slotId: currentBattery.slot_id,
           transactionId,
           issuerTransactionId,
-          referenceId: commitIds.referenceId || referenceId || preauthReferenceId,
+          referenceId: referenceId || purchaseReferenceId,
           unlockAttempts,
-          reason: `Payment committed but battery already linked to active rental ${error.activeRentalId || "unknown"}`,
+          reason: `Payment charged but battery already linked to active rental ${error.activeRentalId || "unknown"}`,
         });
 
         throw new HttpError(
@@ -476,8 +410,8 @@ export async function processPayment(
       battery_id: currentBattery.battery_id,
       slot_id: currentBattery.slot_id,
       unlock,
-      waafiMessage: "Battery released and payment confirmed",
-      waafiResponse: commitResponse,
+      waafiMessage: "Battery released and payment charged",
+      waafiResponse: purchaseResponse,
     };
   } finally {
     if (reservedBatteryId) {

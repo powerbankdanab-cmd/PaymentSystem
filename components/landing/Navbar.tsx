@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 const NAV_LINKS = [
@@ -16,9 +17,9 @@ export function Navbar() {
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-white/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-        <a href="/" className="flex items-center gap-2 text-xl font-black">
+        <Link href="/" className="flex items-center gap-2 text-xl font-black">
           <img src="/danab-logo.svg" alt="Danab" className="h-8 w-auto" />
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
